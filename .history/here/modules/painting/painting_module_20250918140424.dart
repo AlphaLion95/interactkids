@@ -1,0 +1,1 @@
+// Painting module stub

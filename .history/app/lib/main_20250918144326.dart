@@ -1,0 +1,318 @@
+import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:path_provider/path_provider.dart';
+import 'core/voice_audio.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final appDocDir = await getApplicationDocumentsDirectory();
+  Hive.init(appDocDir.path);
+  await Hive.openBox('settings');
+  runApp(const InteractKidsApp());
+}
+
+class InteractKidsApp extends StatelessWidget {
+  const InteractKidsApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'InteractKids',
+      home: FutureBuilder(
+        future: Hive.box('settings').get('voice'),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          }
+          if (snapshot.data == null) {
+            return const VoiceSelectionScreen();
+          }
+          return MainMenu();
+        },
+      ),
+    );
+  }
+}
+
+class MainMenu extends StatelessWidget {
+  final List<_MenuItem> menuItems = const [
+    _MenuItem('Puzzle', Icons.extension, 'PuzzleModule', Colors.orange),
+    _MenuItem('Matching', Icons.link, 'MatchingModule', Colors.blue),
+    _MenuItem('Reading', Icons.menu_book, 'ReadingModule', Colors.green),
+    _MenuItem('Writing', Icons.edit, 'WritingModule', Colors.purple),
+    _MenuItem('Painting', Icons.brush, 'PaintingModule', Colors.pink),
+    _MenuItem('Community Helpers', Icons.people, 'CommunityHelpersModule', Colors.teal),
+    _MenuItem('Planets', Icons.public, 'PlanetsModule', Colors.indigo),
+    _MenuItem('Plants', Icons.local_florist, 'PlantsModule', Colors.lightGreen),
+    _MenuItem('Geography', Icons.map, 'GeographyModule', Colors.cyan),
+    _MenuItem('Parts of House', Icons.home, 'PartsOfHouseModule', Colors.brown),
+    _MenuItem('Vocabulary', Icons.text_fields, 'VocabularyModule', Colors.red),
+  ];
+
+  MainMenu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Animated playful background
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFB2FEFA), Color(0xFF0ED2F7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+          ),
+          // Mascot character (custom image)
+          Positioned(
+            top: 40,
+            right: 24,
+            child: Hero(
+              tag: 'mascot',
+              child: Image.asset(
+                'assets/images/mascot.png',
+                width: 72,
+                height: 72,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          // Animated floating bubbles background
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBubbles(),
+            ),
+          ),
+          // Animated grid of feature cards
+          Center(
+            child: GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 24,
+                crossAxisSpacing: 24,
+                childAspectRatio: 1,
+              ),
+              itemCount: menuItems.length,
+              itemBuilder: (context, index) {
+                final item = menuItems[index];
+                return _AnimatedFeatureCard(item: item, delay: index * 100);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnimatedFeatureCard extends StatefulWidget {
+  final _MenuItem item;
+  final int delay;
+  const _AnimatedFeatureCard({required this.item, required this.delay});
+
+  @override
+  State<_AnimatedFeatureCard> createState() => _AnimatedFeatureCardState();
+}
+
+class _AnimatedFeatureCardState extends State<_AnimatedFeatureCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _scaleAnim = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
+    Future.delayed(Duration(milliseconds: widget.delay), () => _controller.forward());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnim,
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => _ModuleScreen(title: widget.item.title),
+            ),
+          );
+        },
+        child: Card(
+          color: widget.item.color.withOpacity(0.9),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          elevation: 8,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(widget.item.icon, size: 48, color: Colors.white),
+              const SizedBox(height: 16),
+              Text(
+                widget.item.title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuItem {
+  final String title;
+  final IconData icon;
+  final String route;
+  final Color color;
+  const _MenuItem(this.title, this.icon, this.route, this.color);
+}
+
+class _ModuleScreen extends StatelessWidget {
+  final String title;
+  const _ModuleScreen({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Welcome to $title!'),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                VoiceAudioPlayer().play('welcome.mp3');
+              },
+              child: const Text('Play Welcome Voice'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class VoiceSelectionScreen extends StatefulWidget {
+  const VoiceSelectionScreen({super.key});
+
+  @override
+  State<VoiceSelectionScreen> createState() => _VoiceSelectionScreenState();
+}
+
+class _VoiceSelectionScreenState extends State<VoiceSelectionScreen> {
+  String? selectedVoice;
+  final List<_VoiceOption> voices = const [
+    _VoiceOption('Brycen', 'Boy voice (Crocodile)', 'brycen'),
+    _VoiceOption('Yliana', 'Girl voice (Panda)', 'yliana'),
+    _VoiceOption('Kaida', 'Baby voice (Dog)', 'kaida'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Choose Your Voice')),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('Select a voice for the app:', style: TextStyle(fontSize: 20)),
+          const SizedBox(height: 24),
+          ...voices.map((voice) => RadioListTile<String>(
+                title: Text('${voice.name} - ${voice.desc}'),
+                value: voice.key,
+                groupValue: selectedVoice,
+                onChanged: (value) {
+                  setState(() {
+                    selectedVoice = value;
+                  });
+                },
+              )),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: selectedVoice == null
+                ? null
+                : () async {
+                    await Hive.box('settings').put('voice', selectedVoice);
+                    if (mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => MainMenu()),
+                      );
+                    }
+                  },
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VoiceOption {
+  final String name;
+  final String desc;
+  final String key;
+  const _VoiceOption(this.name, this.desc, this.key);
+}
+
+class AnimatedBubbles extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: List.generate(
+        10,
+        (index) => _Bubble(
+          delay: index * 500,
+          size: 80 + (index * 10).toDouble(),
+        ),
+      ),
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {
+  final int delay;
+  final double size;
+  const _Bubble({required this.delay, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedPositioned(
+      duration: const Duration(seconds: 2),
+      curve: Curves.easeInOut,
+      top: -size,
+      left: (MediaQuery.of(context).size.width * (delay % 10) / 10) - size / 2,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withOpacity(0.6),
+        ),
+      ),
+    );
+  }
+}
