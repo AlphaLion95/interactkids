@@ -597,36 +597,57 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     const double trayPieceSize = 64;
     final int totalPieces = rows * cols;
     final bool valid = pieceIdx >= 0 && pieceIdx < totalPieces;
-    return Container(
-      width: trayPieceSize,
-      height: trayPieceSize,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 3))
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: valid
-            ? RepaintBoundary(
-                key: ValueKey('tray_rb_${pieceIdx}_${rows}_${cols}'),
-                child: _PuzzlePiece(
-                  key: ValueKey('tray_${pieceIdx}_${rows}_${cols}'),
-                  imageProvider: provider,
-                  rows: rows,
-                  cols: cols,
-                  row: pieceIdx ~/ cols,
-                  col: pieceIdx % cols,
-                ),
-              )
-            : Center(child: Icon(Icons.error, color: Colors.red)),
-      ),
+    // Make each tray slot a DragTarget so it can accept pieces from the board
+    return DragTarget<int>(
+      onWillAccept: (data) {
+        // Accept if the piece is not already in the tray
+        return data != null && !pieceOrder.contains(data);
+      },
+      onAccept: (data) {
+        setState(() {
+          // Remove from board and add back to tray
+          final boardIdx = boardState.indexOf(data);
+          if (boardIdx != -1) {
+            boardState[boardIdx] = null;
+            if (!pieceOrder.contains(data)) {
+              pieceOrder.add(data);
+            }
+          }
+        });
+      },
+      builder: (context, candidateData, rejectedData) {
+        return Container(
+          width: trayPieceSize,
+          height: trayPieceSize,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3))
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: valid
+                ? RepaintBoundary(
+                    key: ValueKey('tray_rb_${pieceIdx}_${rows}_${cols}'),
+                    child: _PuzzlePiece(
+                      key: ValueKey('tray_${pieceIdx}_${rows}_${cols}'),
+                      imageProvider: provider,
+                      rows: rows,
+                      cols: cols,
+                      row: pieceIdx ~/ cols,
+                      col: pieceIdx % cols,
+                    ),
+                  )
+                : Center(child: Icon(Icons.error, color: Colors.red)),
+          ),
+        );
+      },
     );
   }
 }
