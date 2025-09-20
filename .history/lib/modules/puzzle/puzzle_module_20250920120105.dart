@@ -357,8 +357,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   }
 
   void _getImageAspectRatio() async {
-    final ImageStream stream =
-        _imageProvider.resolve(const ImageConfiguration());
+    final ImageStream stream = _imageProvider.resolve(const ImageConfiguration());
     late ImageStreamListener listener;
     listener = ImageStreamListener((ImageInfo info, bool _) {
       final width = info.image.width;
@@ -494,8 +493,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                             child: Padding(
                               padding: const EdgeInsets.all(16.0),
                               child: (_imageAspectRatio == null)
-                                  ? const Center(
-                                      child: CircularProgressIndicator())
+                                  ? const Center(child: CircularProgressIndicator())
                                   : AspectRatio(
                                       aspectRatio: _imageAspectRatio!,
                                       child: ClipRRect(
@@ -520,13 +518,10 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                                 cols: cols,
                                                 boardState: boardState,
                                                 draggingIndex: draggingIndex,
-                                                onPieceDropped:
-                                                    _onPieceDroppedToBoard,
-                                                onPieceRemoved:
-                                                    _onPieceRemovedFromBoard,
+                                                onPieceDropped: _onPieceDroppedToBoard,
+                                                onPieceRemoved: _onPieceRemovedFromBoard,
                                                 trayPieces: pieceOrder,
-                                                onStartDraggingFromTray:
-                                                    (index) {
+                                                onStartDraggingFromTray: (index) {
                                                   setState(() {
                                                     draggingIndex = index;
                                                   });
@@ -557,8 +552,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                               child: SizedBox.expand(
                                 child: ListView.separated(
                                   scrollDirection: Axis.vertical,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
                                   itemBuilder: (context, index) {
                                     final pieceIdx = pieceOrder[index];
                                     return Draggable<int>(
@@ -579,21 +573,15 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                       ),
                                       childWhenDragging: Opacity(
                                         opacity: 0.25,
-                                        child: _trayPieceWidget(
-                                            _imageProvider, pieceIdx),
+                                        child: _trayPieceWidget(_imageProvider, pieceIdx),
                                       ),
-                                      onDragStarted: () => setState(
-                                          () => draggingIndex = pieceIdx),
-                                      onDraggableCanceled: (_, __) =>
-                                          setState(() => draggingIndex = null),
-                                      onDragEnd: (_) =>
-                                          setState(() => draggingIndex = null),
-                                      child: _trayPieceWidget(
-                                          _imageProvider, pieceIdx),
+                                      onDragStarted: () => setState(() => draggingIndex = pieceIdx),
+                                      onDraggableCanceled: (_, __) => setState(() => draggingIndex = null),
+                                      onDragEnd: (_) => setState(() => draggingIndex = null),
+                                      child: _trayPieceWidget(_imageProvider, pieceIdx),
                                     );
                                   },
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 12),
+                                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                                   itemCount: pieceOrder.length,
                                 ),
                               ),
@@ -604,8 +592,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                     ],
                   )
                 : const Center(
-                    child: Text(
-                        'Please rotate your device to landscape for the best puzzle experience.'),
+                    child: Text('Please rotate your device to landscape for the best puzzle experience.'),
                   );
           },
         ),

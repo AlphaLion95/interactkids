@@ -363,19 +363,9 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     listener = ImageStreamListener((ImageInfo info, bool _) {
       final width = info.image.width;
       final height = info.image.height;
-      if (mounted) {
-        setState(() {
-          _imageAspectRatio = width / height;
-        });
-      }
-      stream.removeListener(listener);
-    }, onError: (dynamic error, StackTrace? stackTrace) {
-      // Fallback to 1:1 if image fails to load
-      if (mounted) {
-        setState(() {
-          _imageAspectRatio = 1.0;
-        });
-      }
+      setState(() {
+        _imageAspectRatio = width / height;
+      });
       stream.removeListener(listener);
     });
     stream.addListener(listener);
@@ -493,7 +483,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(16.0),
-                              child: (_imageAspectRatio == null)
+                              child: _imageAspectRatio == null
                                   ? const Center(
                                       child: CircularProgressIndicator())
                                   : AspectRatio(
@@ -503,40 +493,83 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                         child: Stack(
                                           children: [
                                             // guide image slightly brightened underneath
-                                            Positioned.fill(
-                                              child: Opacity(
-                                                opacity: 0.7,
-                                                child: Image(
-                                                  image: _imageProvider,
-                                                  fit: BoxFit.fill,
-                                                ),
-                                              ),
-                                            ),
-                                            // Puzzle board overlay, perfectly aligned
-                                            Positioned.fill(
-                                              child: _PuzzleBoardWithTray(
-                                                imageProvider: _imageProvider,
-                                                rows: rows,
-                                                cols: cols,
-                                                boardState: boardState,
-                                                draggingIndex: draggingIndex,
-                                                onPieceDropped:
-                                                    _onPieceDroppedToBoard,
-                                                onPieceRemoved:
-                                                    _onPieceRemovedFromBoard,
-                                                trayPieces: pieceOrder,
-                                                onStartDraggingFromTray:
-                                                    (index) {
-                                                  setState(() {
-                                                    draggingIndex = index;
-                                                  });
-                                                },
-                                                onEndDragging: () {
-                                                  setState(() {
-                                                    draggingIndex = null;
-                                                  });
-                                                },
-                                              ),
+                                            LayoutBuilder(
+                                              builder: (context, constraints) {
+                                                final boardW =
+                                                    constraints.maxWidth;
+                                                final boardH =
+                                                    constraints.maxHeight;
+                                                final imgAR =
+                                                    _imageAspectRatio ?? 1.0;
+                                                double imgW = boardW;
+                                                double imgH = boardH;
+                                                double offsetX = 0;
+                                                double offsetY = 0;
+                                                if (boardW / boardH > imgAR) {
+                                                  // board is wider than image: letterbox left/right
+                                                  imgH = boardH;
+                                                  imgW = imgH * imgAR;
+                                                  offsetX = (boardW - imgW) / 2;
+                                                } else {
+                                                  // board is taller than image: letterbox top/bottom
+                                                  imgW = boardW;
+                                                  imgH = imgW / imgAR;
+                                                  offsetY = (boardH - imgH) / 2;
+                                                }
+                                                return Stack(
+                                                  children: [
+                                                    // Guide image
+                                                    Positioned(
+                                                      left: offsetX,
+                                                      top: offsetY,
+                                                      width: imgW,
+                                                      height: imgH,
+                                                      child: Opacity(
+                                                        opacity: 0.7,
+                                                        child: Image(
+                                                          image: _imageProvider,
+                                                          fit: BoxFit.fill,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    // Puzzle board overlay, perfectly aligned
+                                                    Positioned(
+                                                      left: offsetX,
+                                                      top: offsetY,
+                                                      width: imgW,
+                                                      height: imgH,
+                                                      child:
+                                                          _PuzzleBoardWithTray(
+                                                        imageProvider:
+                                                            _imageProvider,
+                                                        rows: rows,
+                                                        cols: cols,
+                                                        boardState: boardState,
+                                                        draggingIndex:
+                                                            draggingIndex,
+                                                        onPieceDropped:
+                                                            _onPieceDroppedToBoard,
+                                                        onPieceRemoved:
+                                                            _onPieceRemovedFromBoard,
+                                                        trayPieces: pieceOrder,
+                                                        onStartDraggingFromTray:
+                                                            (index) {
+                                                          setState(() {
+                                                            draggingIndex =
+                                                                index;
+                                                          });
+                                                        },
+                                                        onEndDragging: () {
+                                                          setState(() {
+                                                            draggingIndex =
+                                                                null;
+                                                          });
+                                                        },
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
                                             ),
                                           ],
                                         ),
@@ -578,10 +611,9 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                         ),
                                       ),
                                       childWhenDragging: Opacity(
-                                        opacity: 0.25,
-                                        child: _trayPieceWidget(
-                                            _imageProvider, pieceIdx),
-                                      ),
+                                          opacity: 0.25,
+                                          child: _trayPieceWidget(
+                                              _imageProvider, pieceIdx)),
                                       onDragStarted: () => setState(
                                           () => draggingIndex = pieceIdx),
                                       onDraggableCanceled: (_, __) =>
@@ -605,8 +637,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                   )
                 : const Center(
                     child: Text(
-                        'Please rotate your device to landscape for the best puzzle experience.'),
-                  );
+                        'Please rotate your device to landscape for the best puzzle experience.'));
           },
         ),
       ),

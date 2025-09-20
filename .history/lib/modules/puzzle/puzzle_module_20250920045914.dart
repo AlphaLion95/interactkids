@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
@@ -24,8 +25,7 @@ class PuzzleTypeScreen extends StatelessWidget {
           Column(
             children: [
               AppBar(
-                title: const Text('Select Puzzle Type',
-                    style: TextStyle(fontFamily: 'Nunito')),
+                title: const Text('Select Puzzle Type', style: TextStyle(fontFamily: 'Nunito')),
                 backgroundColor: Colors.orange,
                 elevation: 0,
                 automaticallyImplyLeading: true,
@@ -40,15 +40,11 @@ class PuzzleTypeScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                           child: ElevatedButton.icon(
                             icon: Icon(type.icon, color: Colors.white),
-                            label: Text(type.name,
-                                style: const TextStyle(
-                                    fontFamily: 'Nunito', fontSize: 22)),
+                            label: Text(type.name, style: const TextStyle(fontFamily: 'Nunito', fontSize: 22)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: type.color,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 18),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18)),
+                              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                             ),
                             onPressed: () {
                               Navigator.push(
@@ -80,6 +76,40 @@ class PuzzleLevelScreen extends StatefulWidget {
 }
 
 class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
+  static const String _progressKey = 'puzzle_progress_v1';
+
+  Future<void> _saveProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Flatten the progress map to a string map for storage
+    final flat = <String, String>{};
+    for (final level in progress.keys) {
+      for (final img in progress[level]!.keys) {
+        flat['$level|$img'] = progress[level]![img]!.toString();
+      }
+    }
+    await prefs.setStringList(_progressKey, flat.entries.map((e) => '${e.key}=${e.value}').toList());
+  }
+
+  Future<void> _loadProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_progressKey);
+    if (list == null) return;
+    for (final entry in list) {
+      final idx = entry.indexOf('=');
+      if (idx == -1) continue;
+      final key = entry.substring(0, idx);
+      final value = entry.substring(idx + 1);
+      final parts = key.split('|');
+      if (parts.length != 2) continue;
+      final level = parts[0];
+      final img = parts[1];
+      final val = double.tryParse(value) ?? 0.0;
+      if (progress.containsKey(level)) {
+        progress[level]![img] = val;
+      }
+    }
+    setState(() {});
+  }
   final List<String> levels = ['Easy', 'Medium', 'Hard'];
   late Map<String, List<String>> defaultImages;
   late Map<String, List<String>> userImages;
@@ -90,13 +120,11 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
     super.initState();
     defaultImages = {
       for (var level in levels)
-        level: List.generate(
-            5,
-            (i) =>
-                'assets/puzzle/${widget.type.name.toLowerCase()}_${level.toLowerCase()}_$i.png'),
+        level: List.generate(5, (i) => 'assets/puzzle/${widget.type.name.toLowerCase()}_${level.toLowerCase()}_$i.png'),
     };
     userImages = {for (var level in levels) level: []};
     progress = {for (var level in levels) level: {}};
+    _loadProgress();
   }
 
   Future<void> _addImage(String level) async {
@@ -107,22 +135,20 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
         userImages[level]!.add(picked.path);
         progress[level]![picked.path] = 0.0;
       });
+      await _saveProgress();
     }
   }
 
-  void _onImageTap(String level, String imagePath) {
-    final int gridSize = level == 'Easy'
-        ? 3
-        : level == 'Medium'
-            ? 4
-            : 5;
-    Navigator.push(
+  void _onImageTap(String level, String imagePath) async {
+    final int gridSize = level == 'Easy' ? 3 : level == 'Medium' ? 4 : 5;
+    // When returning from the puzzle, reload progress in case it changed
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            PuzzleScreen(imagePath: imagePath, rows: gridSize, cols: gridSize),
+        builder: (_) => PuzzleScreen(imagePath: imagePath, rows: gridSize, cols: gridSize),
       ),
     );
+    await _loadProgress();
   }
 
   @override
@@ -134,8 +160,7 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
           Column(
             children: [
               AppBar(
-                title: Text('Select Level - ${widget.type.name}',
-                    style: const TextStyle(fontFamily: 'Nunito')),
+                title: Text('Select Level - ${widget.type.name}', style: const TextStyle(fontFamily: 'Nunito')),
                 backgroundColor: widget.type.color,
                 elevation: 0,
                 automaticallyImplyLeading: true,
@@ -148,14 +173,9 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(level,
-                              style: const TextStyle(
-                                  fontFamily: 'Nunito',
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold)),
+                          Text(level, style: const TextStyle(fontFamily: 'Nunito', fontSize: 20, fontWeight: FontWeight.bold)),
                           IconButton(
-                            icon: const Icon(Icons.add_a_photo,
-                                color: Colors.blue),
+                            icon: const Icon(Icons.add_a_photo, color: Colors.blue),
                             onPressed: () => _addImage(level),
                           ),
                         ],
@@ -197,8 +217,7 @@ class _PuzzleImageTile extends StatelessWidget {
   final String imagePath;
   final double progress;
   final VoidCallback onTap;
-  const _PuzzleImageTile(
-      {required this.imagePath, required this.progress, required this.onTap});
+  const _PuzzleImageTile({required this.imagePath, required this.progress, required this.onTap});
   @override
   Widget build(BuildContext context) {
     final bool isAsset = imagePath.startsWith('assets/');
@@ -211,11 +230,7 @@ class _PuzzleImageTile extends StatelessWidget {
           color: Colors.white.withOpacity(0.7),
           shape: BoxShape.circle,
           boxShadow: [
-            BoxShadow(
-                color: Colors.orange.withOpacity(0.18),
-                blurRadius: 12,
-                spreadRadius: 2,
-                offset: Offset(0, 4)),
+            BoxShadow(color: Colors.orange.withOpacity(0.18), blurRadius: 12, spreadRadius: 2, offset: Offset(0, 4)),
           ],
         ),
         child: Stack(
@@ -228,11 +243,7 @@ class _PuzzleImageTile extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: Colors.white,
                 boxShadow: [
-                  BoxShadow(
-                      color: Colors.orange.withOpacity(0.10),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                      offset: Offset(0, 2)),
+                  BoxShadow(color: Colors.orange.withOpacity(0.10), blurRadius: 8, spreadRadius: 1, offset: Offset(0, 2)),
                 ],
               ),
               child: ClipOval(
@@ -240,16 +251,12 @@ class _PuzzleImageTile extends StatelessWidget {
                     ? Image.asset(
                         imagePath,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Center(
-                            child: Icon(Icons.image,
-                                color: Colors.grey[400], size: 40)),
+                        errorBuilder: (context, error, stackTrace) => Center(child: Icon(Icons.image, color: Colors.grey[400], size: 40)),
                       )
                     : Image.file(
                         File(imagePath),
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Center(
-                            child: Icon(Icons.broken_image,
-                                color: Colors.grey[400], size: 40)),
+                        errorBuilder: (context, error, stackTrace) => Center(child: Icon(Icons.broken_image, color: Colors.grey[400], size: 40)),
                       ),
               ),
             ),
@@ -275,6 +282,8 @@ class _PuzzleImageTile extends StatelessWidget {
 }
 // --- PUZZLE MODULE: GAMIFIED UI RESTORE ---
 
+
+
 /// Full puzzle module with fixes:
 /// - initializes missing fields
 /// - supports asset and file images
@@ -298,6 +307,7 @@ class PuzzleScreen extends StatefulWidget {
 }
 
 class _PuzzleScreenState extends State<PuzzleScreen> {
+  bool _progressSaved = false;
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -319,7 +329,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     ]);
     super.dispose();
   }
-
   double? _imageAspectRatio;
   late ImageProvider _imageProvider;
   late int rows;
@@ -357,25 +366,18 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   }
 
   void _getImageAspectRatio() async {
-    final ImageStream stream =
-        _imageProvider.resolve(const ImageConfiguration());
+    final ImageStream stream = _imageProvider.resolve(const ImageConfiguration());
     late ImageStreamListener listener;
     listener = ImageStreamListener((ImageInfo info, bool _) {
-      final width = info.image.width;
-      final height = info.image.height;
-      if (mounted) {
-        setState(() {
-          _imageAspectRatio = width / height;
-        });
-      }
-      stream.removeListener(listener);
-    }, onError: (dynamic error, StackTrace? stackTrace) {
-      // Fallback to 1:1 if image fails to load
-      if (mounted) {
-        setState(() {
-          _imageAspectRatio = 1.0;
-        });
-      }
+      final width = info.image.width.toDouble();
+      final height = info.image.height.toDouble();
+      double aspect = width / height;
+      // Clamp aspect ratio to a reasonable range to avoid extreme stretching
+      if (aspect < 0.5) aspect = 0.5;
+      if (aspect > 2.0) aspect = 2.0;
+      setState(() {
+        _imageAspectRatio = aspect;
+      });
       stream.removeListener(listener);
     });
     stream.addListener(listener);
@@ -395,7 +397,20 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     return true;
   }
 
-  void _showWinDialog() {
+  void _showWinDialog() async {
+    if (!_progressSaved && widget.imagePath != null) {
+      // Save progress for this image as 1.0 (completed)
+      final contextLevel = _findLevelFromGridSize(widget.rows);
+      if (contextLevel != null) {
+        // Use root navigator to find PuzzleLevelScreen state and update progress
+        final state = context.findAncestorStateOfType<_PuzzleLevelScreenState>();
+        if (state != null) {
+          state.progress[contextLevel]![widget.imagePath!] = 1.0;
+          await state._saveProgress();
+        }
+      }
+      _progressSaved = true;
+    }
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -412,12 +427,20 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
             onPressed: () {
               Navigator.pop(context);
               setState(() => _resetGame());
+              _progressSaved = false;
             },
             child: const Text("Play again"),
           ),
         ],
       ),
     );
+  }
+
+  String? _findLevelFromGridSize(int gridSize) {
+    if (gridSize == 3) return 'Easy';
+    if (gridSize == 4) return 'Medium';
+    if (gridSize == 5) return 'Hard';
+    return null;
   }
 
   /// Called when a piece is dropped onto board index [boardIdx] with piece index [pieceIdx]
@@ -439,8 +462,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
       if (_isSolved()) {
         hasWon = true;
         // delay to allow UI update of final piece before dialog
-        Future.delayed(
-            const Duration(milliseconds: 150), () => _showWinDialog());
+        Future.delayed(const Duration(milliseconds: 150), () => _showWinDialog());
       }
     });
   }
@@ -463,22 +485,25 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Puzzle', style: TextStyle(fontFamily: 'Nunito')),
+        title: Row(
+          children: [
+            const Text('Puzzle', style: TextStyle(fontFamily: 'Nunito')),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              onPressed: () => setState(() => _resetGame()),
+              tooltip: 'Reset',
+            ),
+          ],
+        ),
         backgroundColor: Colors.orange,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () => setState(() => _resetGame()),
-            tooltip: 'Reset',
-          ),
-        ],
       ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isLandscape = constraints.maxWidth > constraints.maxHeight;
-            final double trayHeight = 120;
-            final double availableHeight = constraints.maxHeight - trayHeight;
+            // removed unused trayHeight
+  // removed unused availableHeight
             return isLandscape
                 ? Row(
                     children: [
@@ -486,62 +511,93 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                       Expanded(
                         flex: 3,
                         child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: 500, // limit board width
-                              maxHeight: 500, // optional: also limit height
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: (_imageAspectRatio == null)
-                                  ? const Center(
-                                      child: CircularProgressIndicator())
-                                  : AspectRatio(
-                                      aspectRatio: _imageAspectRatio!,
-                                      child: ClipRRect(
+                          child: AspectRatio(
+                            aspectRatio: _imageAspectRatio ?? 1.0,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: 500,
+                                maxHeight: 500,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: _imageAspectRatio == null
+                                    ? const Center(child: CircularProgressIndicator())
+                                    : ClipRRect(
                                         borderRadius: BorderRadius.circular(20),
                                         child: Stack(
                                           children: [
                                             // guide image slightly brightened underneath
-                                            Positioned.fill(
-                                              child: Opacity(
-                                                opacity: 0.7,
-                                                child: Image(
-                                                  image: _imageProvider,
-                                                  fit: BoxFit.fill,
-                                                ),
-                                              ),
-                                            ),
-                                            // Puzzle board overlay, perfectly aligned
-                                            Positioned.fill(
-                                              child: _PuzzleBoardWithTray(
-                                                imageProvider: _imageProvider,
-                                                rows: rows,
-                                                cols: cols,
-                                                boardState: boardState,
-                                                draggingIndex: draggingIndex,
-                                                onPieceDropped:
-                                                    _onPieceDroppedToBoard,
-                                                onPieceRemoved:
-                                                    _onPieceRemovedFromBoard,
-                                                trayPieces: pieceOrder,
-                                                onStartDraggingFromTray:
-                                                    (index) {
-                                                  setState(() {
-                                                    draggingIndex = index;
-                                                  });
-                                                },
-                                                onEndDragging: () {
-                                                  setState(() {
-                                                    draggingIndex = null;
-                                                  });
-                                                },
-                                              ),
+                                            LayoutBuilder(
+                                              builder: (context, constraints) {
+                                                final boardW = constraints.maxWidth;
+                                                final boardH = constraints.maxHeight;
+                                                final imgAR = _imageAspectRatio ?? 1.0;
+                                                double imgW = boardW;
+                                                double imgH = boardH;
+                                                double offsetX = 0;
+                                                double offsetY = 0;
+                                                if (boardW / boardH > imgAR) {
+                                                  // board is wider than image: letterbox left/right
+                                                  imgH = boardH;
+                                                  imgW = imgH * imgAR;
+                                                  offsetX = (boardW - imgW) / 2;
+                                                } else {
+                                                  // board is taller than image: letterbox top/bottom
+                                                  imgW = boardW;
+                                                  imgH = imgW / imgAR;
+                                                  offsetY = (boardH - imgH) / 2;
+                                                }
+                                                return Stack(
+                                                  children: [
+                                                    // Guide image
+                                                    Positioned(
+                                                      left: offsetX,
+                                                      top: offsetY,
+                                                      width: imgW,
+                                                      height: imgH,
+                                                      child: Opacity(
+                                                        opacity: 0.7,
+                                                        child: Image(
+                                                          image: _imageProvider,
+                                                          fit: BoxFit.fill,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    // Puzzle board overlay, perfectly aligned
+                                                    Positioned(
+                                                      left: offsetX,
+                                                      top: offsetY,
+                                                      width: imgW,
+                                                      height: imgH,
+                                                      child: _PuzzleBoardWithTray(
+                                                        imageProvider: _imageProvider,
+                                                        rows: rows,
+                                                        cols: cols,
+                                                        boardState: boardState,
+                                                        draggingIndex: draggingIndex,
+                                                        onPieceDropped: _onPieceDroppedToBoard,
+                                                        onPieceRemoved: _onPieceRemovedFromBoard,
+                                                        trayPieces: pieceOrder,
+                                                        onStartDraggingFromTray: (index) {
+                                                          setState(() {
+                                                            draggingIndex = index;
+                                                          });
+                                                        },
+                                                        onEndDragging: () {
+                                                          setState(() {
+                                                            draggingIndex = null;
+                                                          });
+                                                        },
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
                                             ),
                                           ],
                                         ),
                                       ),
-                                    ),
+                              ),
                             ),
                           ),
                         ),
@@ -557,8 +613,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                               child: SizedBox.expand(
                                 child: ListView.separated(
                                   scrollDirection: Axis.vertical,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
                                   itemBuilder: (context, index) {
                                     final pieceIdx = pieceOrder[index];
                                     return Draggable<int>(
@@ -577,23 +632,14 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                           ),
                                         ),
                                       ),
-                                      childWhenDragging: Opacity(
-                                        opacity: 0.25,
-                                        child: _trayPieceWidget(
-                                            _imageProvider, pieceIdx),
-                                      ),
-                                      onDragStarted: () => setState(
-                                          () => draggingIndex = pieceIdx),
-                                      onDraggableCanceled: (_, __) =>
-                                          setState(() => draggingIndex = null),
-                                      onDragEnd: (_) =>
-                                          setState(() => draggingIndex = null),
-                                      child: _trayPieceWidget(
-                                          _imageProvider, pieceIdx),
+                                      childWhenDragging: Opacity(opacity: 0.25, child: _trayPieceWidget(_imageProvider, pieceIdx)),
+                                      onDragStarted: () => setState(() => draggingIndex = pieceIdx),
+                                      onDraggableCanceled: (_, __) => setState(() => draggingIndex = null),
+                                      onDragEnd: (_) => setState(() => draggingIndex = null),
+                                      child: _trayPieceWidget(_imageProvider, pieceIdx),
                                     );
                                   },
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 12),
+                                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                                   itemCount: pieceOrder.length,
                                 ),
                               ),
@@ -603,10 +649,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                       ),
                     ],
                   )
-                : const Center(
-                    child: Text(
-                        'Please rotate your device to landscape for the best puzzle experience.'),
-                  );
+                : const Center(child: Text('Please rotate your device to landscape for the best puzzle experience.'));
           },
         ),
       ),
@@ -615,8 +658,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
 
   Widget _trayPieceWidget(ImageProvider provider, int pieceIdx) {
     // Use the same aspect ratio as a board tile
-    final double tileAspect =
-        (cols > 0 && rows > 0) ? (_imageAspectRatio ?? 1.0) * rows / cols : 1.0;
+    final double tileAspect = (cols > 0 && rows > 0) ? (_imageAspectRatio ?? 1.0) * rows / cols : 1.0;
     // Use a fixed tray piece height, width from aspect
     const double trayPieceHeight = 40; // smaller, more natural size
     final double trayPieceWidth = trayPieceHeight * tileAspect;
@@ -629,12 +671,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 3))
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 3))],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
@@ -775,11 +812,7 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                     color: Colors.white.withOpacity(0.02),
                   ),
                   child: candidateData.isNotEmpty
-                      ? Center(
-                          child: Opacity(
-                              opacity: 0.6,
-                              child: Icon(Icons.open_in_new,
-                                  size: 28, color: Colors.orange)))
+                      ? Center(child: Opacity(opacity: 0.6, child: Icon(Icons.open_in_new, size: 28, color: Colors.orange)))
                       : null,
                 );
               }
@@ -799,7 +832,6 @@ class _PuzzlePiece extends StatelessWidget {
   final int cols;
   final int row;
   final int col;
-  final bool miniature; // true for tray pieces
   const _PuzzlePiece({
     Key? key,
     required this.imageProvider,
@@ -807,8 +839,7 @@ class _PuzzlePiece extends StatelessWidget {
     required this.cols,
     required this.row,
     required this.col,
-    this.miniature = false,
-  }) : super(key: key);
+  }) : super(key: key); // Removed miniature parameter
 
   @override
   Widget build(BuildContext context) {
@@ -816,40 +847,39 @@ class _PuzzlePiece extends StatelessWidget {
       builder: (context, constraints) {
         final double tileWidth = constraints.maxWidth;
         final double tileHeight = constraints.maxHeight;
-        if (!miniature) {
-          // Board: render full image, shift to show only tile area
-          return Stack(
-            children: [
-              Positioned(
-                left: -col * tileWidth,
-                top: -row * tileHeight,
+        // The full image size is the size of the whole puzzle (board)
+        final double fullWidth = tileWidth * cols;
+        final double fullHeight = tileHeight * rows;
+        // The region for this piece
+        final Rect pieceRect = Rect.fromLTWH(
+          col * tileWidth,
+          row * tileHeight,
+          tileWidth,
+          tileHeight,
+        );
+        // Use a Stack to position the image so only the correct region is visible
+        return ClipRect(
+          child: SizedBox(
+            width: tileWidth,
+            height: tileHeight,
+            child: OverflowBox(
+              maxWidth: fullWidth,
+              maxHeight: fullHeight,
+              minWidth: fullWidth,
+              minHeight: fullHeight,
+              alignment: Alignment.topLeft,
+              child: Transform.translate(
+                offset: Offset(-pieceRect.left, -pieceRect.top),
                 child: Image(
                   image: imageProvider,
-                  fit: BoxFit.cover,
-                  width: tileWidth * cols,
-                  height: tileHeight * rows,
+                  width: fullWidth,
+                  height: fullHeight,
+                  fit: BoxFit.fill,
                 ),
               ),
-              ClipRect(
-                child: SizedBox(width: tileWidth, height: tileHeight),
-              ),
-            ],
-          );
-        } else {
-          // Tray: render the full image scaled down, but only show the tile region
-          return FractionallySizedBox(
-            widthFactor: 1 / cols,
-            heightFactor: 1 / rows,
-            alignment: Alignment(
-              -1.0 + 2.0 * col / (cols - 1 == 0 ? 1 : cols - 1),
-              -1.0 + 2.0 * row / (rows - 1 == 0 ? 1 : rows - 1),
             ),
-            child: Image(
-              image: imageProvider,
-              fit: BoxFit.contain,
-            ),
-          );
-        }
+          ),
+        );
       },
     );
   }
@@ -873,17 +903,14 @@ class AnimatedBubbles extends StatefulWidget {
   State<AnimatedBubbles> createState() => _AnimatedBubblesState();
 }
 
-class _AnimatedBubblesState extends State<AnimatedBubbles>
-    with SingleTickerProviderStateMixin {
+class _AnimatedBubblesState extends State<AnimatedBubbles> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final List<_Bubble> _bubbles = List.generate(18, (i) => _Bubble.random());
 
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 18))
-          ..repeat();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 18))..repeat();
   }
 
   @override
@@ -910,14 +937,7 @@ class _Bubble {
   final Color color;
   _Bubble(this.x, this.radius, this.speed, this.phase, this.color);
   static _Bubble random() {
-    final colors = [
-      Colors.orange,
-      Colors.blue,
-      Colors.purple,
-      Colors.green,
-      Colors.pink,
-      Colors.yellow
-    ];
+    final colors = [Colors.orange, Colors.blue, Colors.purple, Colors.green, Colors.pink, Colors.yellow];
     return _Bubble(
       math.Random().nextDouble(),
       10 + math.Random().nextDouble() * 18,
@@ -941,7 +961,6 @@ class _BubblesPainter extends CustomPainter {
       canvas.drawCircle(Offset(x, y), b.radius, paint);
     }
   }
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
