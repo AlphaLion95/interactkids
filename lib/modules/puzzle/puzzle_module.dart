@@ -176,16 +176,90 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                           scrollDirection: Axis.horizontal,
                           children: [
                             for (final img in defaultImages[level]!)
-                              _PuzzleImageTile(
-                                imagePath: img,
-                                progress: progress[level]![img] ?? 0.0,
-                                onTap: () => _onImageTap(level, img),
+                              Stack(
+                                children: [
+                                  _PuzzleImageTile(
+                                    imagePath: img,
+                                    progress: progress[level]![img] ?? 0.0,
+                                    onTap: () => _onImageTap(level, img),
+                                  ),
+                                  // Invisible edit/delete for alignment
+                                  Positioned(
+                                    top: 2,
+                                    right: 2,
+                                    child: Row(
+                                      children: [
+                                        Opacity(
+                                          opacity: 0.0,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.edit,
+                                                size: 18, color: Colors.blue),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            onPressed: null,
+                                          ),
+                                        ),
+                                        Opacity(
+                                          opacity: 0.0,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.delete,
+                                                size: 18, color: Colors.red),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            onPressed: null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             for (final img in userImages[level]!)
-                              _PuzzleImageTile(
-                                imagePath: img,
-                                progress: progress[level]![img] ?? 0.0,
-                                onTap: () => _onImageTap(level, img),
+                              Stack(
+                                children: [
+                                  _PuzzleImageTile(
+                                    imagePath: img,
+                                    progress: progress[level]![img] ?? 0.0,
+                                    onTap: () => _onImageTap(level, img),
+                                  ),
+                                  Positioned(
+                                    top: 2,
+                                    right: 2,
+                                    child: Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit,
+                                              size: 18, color: Colors.blue),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          tooltip: 'Edit',
+                                          onPressed: () {
+                                            // Placeholder for edit functionality
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                  content: Text(
+                                                      'Edit feature coming soon!')),
+                                            );
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete,
+                                              size: 18, color: Colors.red),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          tooltip: 'Delete',
+                                          onPressed: () {
+                                            setState(() {
+                                              userImages[level]!.remove(img);
+                                              progress[level]!.remove(img);
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                           ],
                         ),
