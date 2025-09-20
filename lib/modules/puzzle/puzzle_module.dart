@@ -308,6 +308,7 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                 imagePath: img,
                                 progress: progress[level]![img] ?? 0.0,
                                 onTap: () => _onImageTap(level, img),
+                                completed: (progress[level]![img] ?? 0.0) >= 1.0,
                               )),
                           ...userImages[level]!.map((img) => Stack(
                                 children: [
@@ -315,6 +316,7 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                     imagePath: img,
                                     progress: progress[level]![img] ?? 0.0,
                                     onTap: () => _onImageTap(level, img),
+                                    completed: (progress[level]![img] ?? 0.0) >= 1.0,
                                   ),
                                   Positioned(
                                     top: 2,
@@ -376,86 +378,132 @@ class _PuzzleImageTile extends StatelessWidget {
   final String imagePath;
   final double progress;
   final VoidCallback onTap;
-  const _PuzzleImageTile(
-      {required this.imagePath, required this.progress, required this.onTap});
+  final bool completed;
+  const _PuzzleImageTile({
+    required this.imagePath,
+    required this.progress,
+    required this.onTap,
+    this.completed = false,
+  });
   @override
   Widget build(BuildContext context) {
     final bool isAsset = imagePath.startsWith('assets/');
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Material(
-          color: Colors.transparent,
-          elevation: 8,
-          borderRadius: BorderRadius.circular(32),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(32),
-            splashColor: Colors.orange.withOpacity(0.18),
-            highlightColor: Colors.orange.withOpacity(0.10),
-            child: Container(
-              width: 96,
-              height: 82,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white,
-                    Colors.orange.shade50,
-                    Colors.orange.shade100,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+        Stack(
+          children: [
+            Material(
+              color: Colors.transparent,
+              elevation: 8,
+              borderRadius: BorderRadius.circular(32),
+              child: InkWell(
+                onTap: onTap,
                 borderRadius: BorderRadius.circular(32),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.orange.withOpacity(0.18),
-                    blurRadius: 18,
-                    spreadRadius: 3,
-                    offset: const Offset(0, 8),
+                splashColor: Colors.orange.withOpacity(0.18),
+                highlightColor: Colors.orange.withOpacity(0.10),
+                child: Container(
+                  width: 96,
+                  height: 82,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white,
+                        Colors.orange.shade50,
+                        Colors.orange.shade100,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.18),
+                        blurRadius: 18,
+                        spreadRadius: 3,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: Colors.orange.withOpacity(0.22),
+                      width: 2.2,
+                    ),
                   ),
-                ],
-                border: Border.all(
-                  color: Colors.orange.withOpacity(0.22),
-                  width: 2.2,
-                ),
-              ),
-              child: Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    color: Colors.white,
-                    child: isAsset
-                        ? Image.asset(
-                            imagePath,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Center(
-                              child: Icon(
-                                Icons.image,
-                                color: Colors.grey[400],
-                                size: 40,
+                  child: Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(
+                        width: 72,
+                        height: 72,
+                        color: Colors.white,
+                        child: isAsset
+                            ? Image.asset(
+                                imagePath,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Center(
+                                  child: Icon(
+                                    Icons.image,
+                                    color: Colors.grey[400],
+                                    size: 40,
+                                  ),
+                                ),
+                              )
+                            : Image.file(
+                                File(imagePath),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Center(
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: Colors.grey[400],
+                                    size: 40,
+                                  ),
+                                ),
                               ),
-                            ),
-                          )
-                        : Image.file(
-                            File(imagePath),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Center(
-                              child: Icon(
-                                Icons.broken_image,
-                                color: Colors.grey[400],
-                                size: 40,
-                              ),
-                            ),
-                          ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+            if (completed)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(32),
+                      bottomLeft: Radius.circular(16),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: const Offset(2, 2),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.emoji_events, color: Colors.white, size: 18),
+                      SizedBox(width: 2),
+                      Text(
+                        'Done!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
         SizedBox(
