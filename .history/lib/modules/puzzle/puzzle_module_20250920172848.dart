@@ -634,14 +634,9 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   }
 
   void _updateProgress() {
-    // Calculate percent complete: only count pieces in the correct position
-    int correct = 0;
-    for (int i = 0; i < boardState.length; i++) {
-      if (boardState[i] == i) {
-        correct++;
-      }
-    }
-    final percent = correct / boardState.length;
+    // Calculate percent complete
+    final placed = boardState.where((e) => e != null).length;
+    final percent = placed / boardState.length;
     if (widget.onProgress != null) {
       widget.onProgress!(percent,
           boardState: List<int?>.from(boardState),

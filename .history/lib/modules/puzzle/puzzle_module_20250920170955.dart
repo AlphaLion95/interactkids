@@ -8,6 +8,7 @@ import 'dart:ui' as ui;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -15,6 +16,7 @@ import 'package:flutter/services.dart';
 
 class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
+    _PuzzleTheme('Zoo', Icons.pets, Color(0xFFffb347)),
     _PuzzleTheme('Sea', Icons.waves, Color(0xFF40c4ff)),
     _PuzzleTheme('Jungle', Icons.park, Color(0xFF66bb6a)),
     _PuzzleTheme('Flying', Icons.flight, Color(0xFFb39ddb)),
@@ -22,7 +24,11 @@ class PuzzleTypeScreen extends StatelessWidget {
   const PuzzleTypeScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    // No forced orientation here; handled per screen
+    // Set landscape orientation for the whole app (only needs to be called once)
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     return Scaffold(
       backgroundColor: const Color(0xFFF7F6FF),
       body: Stack(
@@ -513,26 +519,6 @@ class PuzzleScreen extends StatefulWidget {
 }
 
 class _PuzzleScreenState extends State<PuzzleScreen> {
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-  }
-
-  @override
-  void dispose() {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    super.dispose();
-  }
-
   double? _imageAspectRatio;
   late ImageProvider _imageProvider;
   late int rows;
@@ -634,14 +620,9 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   }
 
   void _updateProgress() {
-    // Calculate percent complete: only count pieces in the correct position
-    int correct = 0;
-    for (int i = 0; i < boardState.length; i++) {
-      if (boardState[i] == i) {
-        correct++;
-      }
-    }
-    final percent = correct / boardState.length;
+    // Calculate percent complete
+    final placed = boardState.where((e) => e != null).length;
+    final percent = placed / boardState.length;
     if (widget.onProgress != null) {
       widget.onProgress!(percent,
           boardState: List<int?>.from(boardState),
@@ -701,132 +682,123 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
           builder: (context, constraints) {
             final isLandscape = constraints.maxWidth > constraints.maxHeight;
             return isLandscape
-                ? Stack(
+                ? Row(
                     children: [
-                      const Positioned.fill(child: AnimatedBubbles()),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 500,
-                                  maxHeight: 500,
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: (_imageAspectRatio == null)
-                                      ? const Center(
-                                          child: CircularProgressIndicator())
-                                      : AspectRatio(
-                                          aspectRatio: _imageAspectRatio!,
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                            child: Stack(
-                                              children: [
-                                                Positioned.fill(
-                                                  child: Opacity(
-                                                    opacity: 0.7,
-                                                    child: Image(
-                                                      image: _imageProvider,
-                                                      fit: BoxFit.fill,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Positioned.fill(
-                                                  child: _PuzzleBoardWithTray(
-                                                    imageProvider:
-                                                        _imageProvider,
-                                                    rows: rows,
-                                                    cols: cols,
-                                                    boardState: boardState,
-                                                    draggingIndex:
-                                                        draggingIndex,
-                                                    onPieceDropped:
-                                                        _onPieceDroppedToBoard,
-                                                    onPieceRemoved:
-                                                        _onPieceRemovedFromBoard,
-                                                    trayPieces: pieceOrder,
-                                                    onStartDraggingFromTray:
-                                                        (index) {
-                                                      setState(() {
-                                                        draggingIndex = index;
-                                                      });
-                                                    },
-                                                    onEndDragging: () {
-                                                      setState(() {
-                                                        draggingIndex = null;
-                                                      });
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                ),
-                              ),
+                      Expanded(
+                        flex: 3,
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: 500,
+                              maxHeight: 500,
                             ),
-                          ),
-                          Container(
-                            width: 180,
-                            color: Colors.grey.withOpacity(0.04),
-                            child: Column(
-                              children: [
-                                const SizedBox(height: 16),
-                                Expanded(
-                                  child: ListView.separated(
-                                    scrollDirection: Axis.vertical,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12),
-                                    itemBuilder: (context, index) {
-                                      final pieceIdx = pieceOrder[index];
-                                      return Draggable<int>(
-                                        data: pieceIdx,
-                                        feedback: Material(
-                                          color: Colors.transparent,
-                                          child: Transform.translate(
-                                            offset: const Offset(-44, -44),
-                                            child: SizedBox(
-                                              width: 88,
-                                              height: 88,
-                                              child: _PuzzlePiece(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: (_imageAspectRatio == null)
+                                  ? const Center(
+                                      child: CircularProgressIndicator())
+                                  : AspectRatio(
+                                      aspectRatio: _imageAspectRatio!,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Stack(
+                                          children: [
+                                            Positioned.fill(
+                                              child: Opacity(
+                                                opacity: 0.7,
+                                                child: Image(
+                                                  image: _imageProvider,
+                                                  fit: BoxFit.fill,
+                                                ),
+                                              ),
+                                            ),
+                                            Positioned.fill(
+                                              child: _PuzzleBoardWithTray(
                                                 imageProvider: _imageProvider,
                                                 rows: rows,
                                                 cols: cols,
-                                                row: pieceIdx ~/ cols,
-                                                col: pieceIdx % cols,
+                                                boardState: boardState,
+                                                draggingIndex: draggingIndex,
+                                                onPieceDropped:
+                                                    _onPieceDroppedToBoard,
+                                                onPieceRemoved:
+                                                    _onPieceRemovedFromBoard,
+                                                trayPieces: pieceOrder,
+                                                onStartDraggingFromTray:
+                                                    (index) {
+                                                  setState(() {
+                                                    draggingIndex = index;
+                                                  });
+                                                },
+                                                onEndDragging: () {
+                                                  setState(() {
+                                                    draggingIndex = null;
+                                                  });
+                                                },
                                               ),
                                             ),
-                                          ),
+                                          ],
                                         ),
-                                        childWhenDragging: Opacity(
-                                          opacity: 0.25,
-                                          child: _trayPieceWidget(
-                                              _imageProvider, pieceIdx),
-                                        ),
-                                        onDragStarted: () => setState(
-                                            () => draggingIndex = pieceIdx),
-                                        onDraggableCanceled: (_, __) =>
-                                            setState(
-                                                () => draggingIndex = null),
-                                        onDragEnd: (_) => setState(
-                                            () => draggingIndex = null),
-                                        child: _trayPieceWidget(
-                                            _imageProvider, pieceIdx),
-                                      );
-                                    },
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 12),
-                                    itemCount: pieceOrder.length,
-                                  ),
-                                ),
-                              ],
+                                      ),
+                                    ),
                             ),
                           ),
-                        ],
+                        ),
+                      ),
+                      Container(
+                        width: 180,
+                        color: Colors.grey.withOpacity(0.04),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 16),
+                            Expanded(
+                              child: ListView.separated(
+                                scrollDirection: Axis.vertical,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                itemBuilder: (context, index) {
+                                  final pieceIdx = pieceOrder[index];
+                                  return Draggable<int>(
+                                    data: pieceIdx,
+                                    feedback: Material(
+                                      color: Colors.transparent,
+                                      child: Transform.translate(
+                                        offset: const Offset(-44, -44),
+                                        child: SizedBox(
+                                          width: 88,
+                                          height: 88,
+                                          child: _PuzzlePiece(
+                                            imageProvider: _imageProvider,
+                                            rows: rows,
+                                            cols: cols,
+                                            row: pieceIdx ~/ cols,
+                                            col: pieceIdx % cols,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    childWhenDragging: Opacity(
+                                      opacity: 0.25,
+                                      child: _trayPieceWidget(
+                                          _imageProvider, pieceIdx),
+                                    ),
+                                    onDragStarted: () => setState(
+                                        () => draggingIndex = pieceIdx),
+                                    onDraggableCanceled: (_, __) =>
+                                        setState(() => draggingIndex = null),
+                                    onDragEnd: (_) =>
+                                        setState(() => draggingIndex = null),
+                                    child: _trayPieceWidget(
+                                        _imageProvider, pieceIdx),
+                                  );
+                                },
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 12),
+                                itemCount: pieceOrder.length,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   )

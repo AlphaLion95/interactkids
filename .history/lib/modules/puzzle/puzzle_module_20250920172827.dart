@@ -532,7 +532,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     ]);
     super.dispose();
   }
-
   double? _imageAspectRatio;
   late ImageProvider _imageProvider;
   late int rows;
@@ -634,14 +633,9 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   }
 
   void _updateProgress() {
-    // Calculate percent complete: only count pieces in the correct position
-    int correct = 0;
-    for (int i = 0; i < boardState.length; i++) {
-      if (boardState[i] == i) {
-        correct++;
-      }
-    }
-    final percent = correct / boardState.length;
+    // Calculate percent complete
+    final placed = boardState.where((e) => e != null).length;
+    final percent = placed / boardState.length;
     if (widget.onProgress != null) {
       widget.onProgress!(percent,
           boardState: List<int?>.from(boardState),
@@ -722,8 +716,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                       : AspectRatio(
                                           aspectRatio: _imageAspectRatio!,
                                           child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(20),
                                             child: Stack(
                                               children: [
                                                 Positioned.fill(
@@ -737,13 +730,11 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                                 ),
                                                 Positioned.fill(
                                                   child: _PuzzleBoardWithTray(
-                                                    imageProvider:
-                                                        _imageProvider,
+                                                    imageProvider: _imageProvider,
                                                     rows: rows,
                                                     cols: cols,
                                                     boardState: boardState,
-                                                    draggingIndex:
-                                                        draggingIndex,
+                                                    draggingIndex: draggingIndex,
                                                     onPieceDropped:
                                                         _onPieceDroppedToBoard,
                                                     onPieceRemoved:
@@ -779,8 +770,8 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                 Expanded(
                                   child: ListView.separated(
                                     scrollDirection: Axis.vertical,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12),
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: 12),
                                     itemBuilder: (context, index) {
                                       final pieceIdx = pieceOrder[index];
                                       return Draggable<int>(
@@ -810,10 +801,9 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                         onDragStarted: () => setState(
                                             () => draggingIndex = pieceIdx),
                                         onDraggableCanceled: (_, __) =>
-                                            setState(
-                                                () => draggingIndex = null),
-                                        onDragEnd: (_) => setState(
-                                            () => draggingIndex = null),
+                                            setState(() => draggingIndex = null),
+                                        onDragEnd: (_) =>
+                                            setState(() => draggingIndex = null),
                                         child: _trayPieceWidget(
                                             _imageProvider, pieceIdx),
                                       );
