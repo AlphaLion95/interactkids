@@ -1,7 +1,10 @@
+// --- PUZZLE PIECE PAINTER (top-level, for cropping) ---
+
 // --- PUZZLE SELECTION SCREENS (Type -> Level -> Play) ---
 
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -780,6 +783,7 @@ class _PuzzlePiece extends StatelessWidget {
   final int cols;
   final int row;
   final int col;
+
   const _PuzzlePiece({
     Key? key,
     required this.imageProvider,
@@ -791,31 +795,75 @@ class _PuzzlePiece extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRect(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return FractionallySizedBox(
-            widthFactor: cols.toDouble(),
-            heightFactor: rows.toDouble(),
-            alignment: Alignment(
-              -1.0 + (col * 2 + 1) / cols,
-              -1.0 + (row * 2 + 1) / rows,
-            ),
-            child: Image(
-              image: imageProvider,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Colors.red.withOpacity(0.2),
-                  child: const Center(child: FlutterLogo(size: 40)),
-                );
-              },
-            ),
-          );
-        },
-      ),
+    return FutureBuilder<ImageInfo>(
+      future: _getImageInfo(imageProvider),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        final imageInfo = snapshot.data!;
+        final image = imageInfo.image;
+
+        return CustomPaint(
+          size: Size.infinite,
+          painter: _PuzzlePainter(
+            image: image,
+            rows: rows,
+            cols: cols,
+            row: row,
+            col: col,
+          ),
+        );
+      },
     );
   }
+
+  Future<ImageInfo> _getImageInfo(ImageProvider provider) async {
+    final completer = Completer<ImageInfo>();
+    final stream = provider.resolve(const ImageConfiguration());
+    final listener = ImageStreamListener((info, _) {
+      completer.complete(info);
+    });
+    stream.addListener(listener);
+    return completer.future;
+  }
+}
+
+// Top-level painter for puzzle piece cropping
+class _PuzzlePainter extends CustomPainter {
+  final ui.Image image;
+  final int rows;
+  final int cols;
+  final int row;
+  final int col;
+
+  _PuzzlePainter({
+    required this.image,
+    required this.rows,
+    required this.cols,
+    required this.row,
+    required this.col,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final pieceWidth = image.width / cols;
+    final pieceHeight = image.height / rows;
+
+    final src = Rect.fromLTWH(
+      col * pieceWidth,
+      row * pieceHeight,
+      pieceWidth,
+      pieceHeight,
+    );
+
+    final dst = Rect.fromLTWH(0, 0, size.width, size.height);
+
+    canvas.drawImageRect(image, src, dst, Paint());
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 // --------------------------
 // Rest of the screens & helpers (top-level)
