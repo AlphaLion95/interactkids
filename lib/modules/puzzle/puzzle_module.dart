@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
@@ -85,6 +87,38 @@ class PuzzleLevelScreen extends StatefulWidget {
 }
 
 class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
+  // Save progress and userImages to shared_preferences
+  Future<void> _saveProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final progressJson = jsonEncode(progress);
+    final userImagesJson = jsonEncode(userImages);
+    await prefs.setString('puzzle_progress_${widget.type.name}', progressJson);
+    await prefs.setString(
+        'puzzle_userImages_${widget.type.name}', userImagesJson);
+  }
+
+  // Load progress and userImages from shared_preferences
+  Future<void> _loadProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final progressStr = prefs.getString('puzzle_progress_${widget.type.name}');
+    final userImagesStr =
+        prefs.getString('puzzle_userImages_${widget.type.name}');
+    if (progressStr != null) {
+      final decoded = jsonDecode(progressStr) as Map<String, dynamic>;
+      progress = decoded.map((level, imgMap) => MapEntry(
+            level,
+            (imgMap as Map<String, dynamic>)
+                .map((img, val) => MapEntry(img, (val as num).toDouble())),
+          ));
+    }
+    if (userImagesStr != null) {
+      final decoded = jsonDecode(userImagesStr) as Map<String, dynamic>;
+      userImages = decoded
+          .map((level, list) => MapEntry(level, List<String>.from(list)));
+    }
+    setState(() {});
+  }
+
   Future<void> _editImage(String level, String imgPath) async {
     final cropped = await ImageCropper().cropImage(
       sourcePath: imgPath,
@@ -139,6 +173,7 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
     };
     userImages = {for (var level in levels) level: []};
     progress = {for (var level in levels) level: {}};
+    _loadProgress();
   }
 
   Future<void> _addImage(String level) async {
@@ -149,6 +184,7 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
         userImages[level]!.add(picked.path);
         progress[level]![picked.path] = 0.0;
       });
+      await _saveProgress();
     }
   }
 
@@ -167,14 +203,26 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
     // Ensure progress entry exists for default images
     if (!progress[level]!.containsKey(imagePath)) {
       progress[level]![imagePath] = 0.0;
+      _saveProgress();
     }
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            PuzzleScreen(imagePath: imagePath, rows: gridSize, cols: gridSize),
+        builder: (_) => PuzzleScreen(
+          imagePath: imagePath,
+          rows: gridSize,
+          cols: gridSize,
+          onProgress: (percent) async {
+            setState(() {
+              progress[level]![imagePath] = percent;
+            });
+            await _saveProgress();
+          },
+        ),
       ),
-    );
+    ).then((_) {
+      setState(() {}); // Refresh progress bar after returning
+    });
   }
 
   @override
@@ -280,8 +328,9 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                           padding: EdgeInsets.zero,
                                           constraints: const BoxConstraints(),
                                           tooltip: 'Edit',
-                                          onPressed: () {
-                                            _editImage(level, img);
+                                          onPressed: () async {
+                                            await _editImage(level, img);
+                                            await _saveProgress();
                                           },
                                         ),
                                         IconButton(
@@ -290,11 +339,12 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                           padding: EdgeInsets.zero,
                                           constraints: const BoxConstraints(),
                                           tooltip: 'Delete',
-                                          onPressed: () {
+                                          onPressed: () async {
                                             setState(() {
                                               userImages[level]!.remove(img);
                                               progress[level]!.remove(img);
                                             });
+                                            await _saveProgress();
                                           },
                                         ),
                                       ],
@@ -405,11 +455,13 @@ class PuzzleScreen extends StatefulWidget {
   final String? imagePath;
   final int rows;
   final int cols;
+  final void Function(double percent)? onProgress;
   const PuzzleScreen({
     Key? key,
     this.imagePath,
     this.rows = 3,
     this.cols = 3,
+    this.onProgress,
   }) : super(key: key);
 
   @override
@@ -511,6 +563,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
       }
       draggingIndex = null;
       _checkWin();
+      _updateProgress();
     });
   }
 
@@ -521,8 +574,18 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
         boardState[boardIdx] = null;
         pieceOrder.add(pieceIdx);
         draggingIndex = null;
+        _updateProgress();
       }
     });
+  }
+
+  void _updateProgress() {
+    // Calculate percent complete
+    final placed = boardState.where((e) => e != null).length;
+    final percent = placed / boardState.length;
+    if (widget.onProgress != null) {
+      widget.onProgress!(percent);
+    }
   }
 
   void _checkWin() {
