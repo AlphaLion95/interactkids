@@ -302,7 +302,7 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                         ],
                       ),
                       GridView.count(
-                        crossAxisCount: 3,
+                        crossAxisCount: 4,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         mainAxisSpacing: 16,

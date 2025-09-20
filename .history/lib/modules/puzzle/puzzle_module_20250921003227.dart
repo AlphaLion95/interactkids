@@ -301,21 +301,52 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                           ),
                         ],
                       ),
-                      GridView.count(
-                        crossAxisCount: 3,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        childAspectRatio: 1,
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        children: [
-                          ...defaultImages[level]!.map((img) => _PuzzleImageTile(
-                                imagePath: img,
-                                progress: progress[level]![img] ?? 0.0,
-                                onTap: () => _onImageTap(level, img),
-                              )),
-                          ...userImages[level]!.map((img) => Stack(
+                      SizedBox(
+                        height: 120,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            for (final img in defaultImages[level]!)
+                              Stack(
+                                children: [
+                                  _PuzzleImageTile(
+                                    imagePath: img,
+                                    progress: progress[level]![img] ?? 0.0,
+                                    onTap: () => _onImageTap(level, img),
+                                  ),
+                                  // Invisible edit/delete for alignment
+                                  Positioned(
+                                    top: 2,
+                                    right: 2,
+                                    child: Row(
+                                      children: [
+                                        IgnorePointer(
+                                          child: IconButton(
+                                            icon: const Icon(Icons.edit,
+                                                size: 18, color: Colors.blue),
+                                            padding: EdgeInsets.zero,
+                                            constraints:
+                                                const BoxConstraints(),
+                                            onPressed: null,
+                                          ),
+                                        ),
+                                        IgnorePointer(
+                                          child: IconButton(
+                                            icon: const Icon(Icons.delete,
+                                                size: 18, color: Colors.red),
+                                            padding: EdgeInsets.zero,
+                                            constraints:
+                                                const BoxConstraints(),
+                                            onPressed: null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            for (final img in userImages[level]!)
+                              Stack(
                                 children: [
                                   _PuzzleImageTile(
                                     imagePath: img,
@@ -329,12 +360,9 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                       children: [
                                         IconButton(
                                           icon: const Icon(Icons.edit,
-                                              size: 32, color: Colors.blue),
-                                          padding: const EdgeInsets.all(8),
-                                          constraints: const BoxConstraints(
-                                            minWidth: 48,
-                                            minHeight: 48,
-                                          ),
+                                              size: 18, color: Colors.blue),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
                                           tooltip: 'Edit',
                                           onPressed: () async {
                                             await _editImage(level, img);
@@ -343,12 +371,9 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.delete,
-                                              size: 32, color: Colors.red),
-                                          padding: const EdgeInsets.all(8),
-                                          constraints: const BoxConstraints(
-                                            minWidth: 48,
-                                            minHeight: 48,
-                                          ),
+                                              size: 18, color: Colors.red),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
                                           tooltip: 'Delete',
                                           onPressed: () async {
                                             setState(() {
@@ -362,8 +387,9 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                     ),
                                   ),
                                 ],
-                              )),
-                        ],
+                              ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 24),
                     ],

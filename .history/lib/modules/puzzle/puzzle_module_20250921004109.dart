@@ -301,21 +301,21 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                           ),
                         ],
                       ),
-                      GridView.count(
-                        crossAxisCount: 3,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        childAspectRatio: 1,
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      Column(
                         children: [
-                          ...defaultImages[level]!.map((img) => _PuzzleImageTile(
+                          for (final img in defaultImages[level]!)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8.0),
+                              child: _PuzzleImageTile(
                                 imagePath: img,
                                 progress: progress[level]![img] ?? 0.0,
                                 onTap: () => _onImageTap(level, img),
-                              )),
-                          ...userImages[level]!.map((img) => Stack(
+                              ),
+                            ),
+                          for (final img in userImages[level]!)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Stack(
                                 children: [
                                   _PuzzleImageTile(
                                     imagePath: img,
@@ -362,7 +362,8 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                     ),
                                   ),
                                 ],
-                              )),
+                              ),
+                            ),
                         ],
                       ),
                       const SizedBox(height: 24),

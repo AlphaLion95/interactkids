@@ -301,21 +301,54 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                           ),
                         ],
                       ),
-                      GridView.count(
-                        crossAxisCount: 3,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        childAspectRatio: 1,
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        children: [
-                          ...defaultImages[level]!.map((img) => _PuzzleImageTile(
-                                imagePath: img,
-                                progress: progress[level]![img] ?? 0.0,
-                                onTap: () => _onImageTap(level, img),
-                              )),
-                          ...userImages[level]!.map((img) => Stack(
+                      SizedBox(
+                        height: 120,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            for (final img in defaultImages[level]!)
+                              Stack(
+                                children: [
+                                  _PuzzleImageTile(
+                                    imagePath: img,
+                                    progress: progress[level]![img] ?? 0.0,
+                                    onTap: () => _onImageTap(level, img),
+                                  ),
+                                  // Invisible edit/delete for alignment
+                                  Positioned(
+                                    top: 2,
+                                    right: 2,
+                                    child: Row(
+                                      children: [
+                                        Opacity(
+                                          opacity: 0.0,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.edit,
+                                                size: 18, color: Colors.blue),
+                                            padding: EdgeInsets.zero,
+                                            constraints:
+                                                const BoxConstraints(),
+                                            onPressed: null,
+                                          ),
+                                        ),
+                                        Opacity(
+                                          opacity: 0.0,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.delete,
+                                                size: 18, color: Colors.red),
+                                            padding: EdgeInsets.zero,
+                                            constraints:
+                                                const BoxConstraints(),
+                                            onPressed: null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            for (final img in userImages[level]!)
+                              Stack(
                                 children: [
                                   _PuzzleImageTile(
                                     imagePath: img,
@@ -329,12 +362,9 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                       children: [
                                         IconButton(
                                           icon: const Icon(Icons.edit,
-                                              size: 32, color: Colors.blue),
-                                          padding: const EdgeInsets.all(8),
-                                          constraints: const BoxConstraints(
-                                            minWidth: 48,
-                                            minHeight: 48,
-                                          ),
+                                              size: 18, color: Colors.blue),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
                                           tooltip: 'Edit',
                                           onPressed: () async {
                                             await _editImage(level, img);
@@ -343,12 +373,9 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.delete,
-                                              size: 32, color: Colors.red),
-                                          padding: const EdgeInsets.all(8),
-                                          constraints: const BoxConstraints(
-                                            minWidth: 48,
-                                            minHeight: 48,
-                                          ),
+                                              size: 18, color: Colors.red),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
                                           tooltip: 'Delete',
                                           onPressed: () async {
                                             setState(() {
@@ -362,8 +389,9 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                     ),
                                   ),
                                 ],
-                              )),
-                        ],
+                              ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 24),
                     ],
@@ -387,96 +415,82 @@ class _PuzzleImageTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isAsset = imagePath.startsWith('assets/');
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Material(
-          color: Colors.transparent,
-          elevation: 8,
-          borderRadius: BorderRadius.circular(32),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(32),
-            splashColor: Colors.orange.withOpacity(0.18),
-            highlightColor: Colors.orange.withOpacity(0.10),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 90,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.7),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.orange.withOpacity(0.18),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 4)),
+              ],
+            ),
             child: Container(
-              width: 96,
-              height: 82,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
+              width: 74,
+              height: 74,
+              margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white,
-                    Colors.orange.shade50,
-                    Colors.orange.shade100,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(32),
+                shape: BoxShape.circle,
+                color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.orange.withOpacity(0.18),
-                    blurRadius: 18,
-                    spreadRadius: 3,
-                    offset: const Offset(0, 8),
-                  ),
+                      color: Colors.orange.withOpacity(0.10),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                      offset: Offset(0, 2)),
                 ],
-                border: Border.all(
-                  color: Colors.orange.withOpacity(0.22),
-                  width: 2.2,
-                ),
               ),
-              child: Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    color: Colors.white,
-                    child: isAsset
-                        ? Image.asset(
-                            imagePath,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Center(
-                              child: Icon(
-                                Icons.image,
-                                color: Colors.grey[400],
-                                size: 40,
-                              ),
-                            ),
-                          )
-                        : Image.file(
-                            File(imagePath),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Center(
-                              child: Icon(
-                                Icons.broken_image,
-                                color: Colors.grey[400],
-                                size: 40,
-                              ),
-                            ),
+              child: ClipOval(
+                child: isAsset
+                    ? Image.asset(
+                        imagePath,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(
+                            Icons.image,
+                            color: Colors.grey[400],
+                            size: 40,
                           ),
-                  ),
-                ),
+                        ),
+                      )
+                    : Image.file(
+                        File(imagePath),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.grey[400],
+                            size: 40,
+                          ),
+                        ),
+                      ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: 74,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              backgroundColor: Colors.grey[300],
-              color: progress < 1.0 ? Colors.blue : Colors.green,
+          const SizedBox(height: 4),
+          SizedBox(
+            width: 74,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 8,
+                backgroundColor: Colors.grey[300],
+                color: progress < 1.0 ? Colors.blue : Colors.green,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
