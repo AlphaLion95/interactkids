@@ -112,6 +112,12 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
   }
 
   void _onImageTap(String level, String imagePath) {
+    final int numPieces = (level == 'Easy')
+        ? 3 * 3
+        : (level == 'Medium')
+            ? 4 * 4
+            : 5 * 5;
+    print('DEBUG: Selected $level puzzle with $numPieces pieces');
     final int gridSize = level == 'Easy'
         ? 3
         : level == 'Medium'
@@ -373,12 +379,20 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
 
   void _onPieceDroppedToBoard(int boardIdx, int pieceIdx) {
     setState(() {
-      if (boardState[boardIdx] == null && pieceOrder.contains(pieceIdx)) {
+      final prevIdx = boardState.indexOf(pieceIdx);
+      final oldPiece = boardState[boardIdx];
+      if (prevIdx != -1) {
+        // Piece is being moved from another box (swap)
+        boardState[prevIdx] = oldPiece;
+        boardState[boardIdx] = pieceIdx;
+      } else if (boardState[boardIdx] == null &&
+          pieceOrder.contains(pieceIdx)) {
+        // Piece is from tray
         boardState[boardIdx] = pieceIdx;
         pieceOrder.remove(pieceIdx);
-        draggingIndex = null;
-        _checkWin();
       }
+      draggingIndex = null;
+      _checkWin();
     });
   }
 
@@ -426,6 +440,8 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('DEBUG: pieceOrder = '
+        '${pieceOrder.toString()}');
     return Scaffold(
       appBar: AppBar(
         title: const Text('Puzzle', style: TextStyle(fontFamily: 'Nunito')),
@@ -513,51 +529,49 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                           children: [
                             const SizedBox(height: 16),
                             Expanded(
-                              child: SizedBox.expand(
-                                child: ListView.separated(
-                                  scrollDirection: Axis.vertical,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  itemBuilder: (context, index) {
-                                    final pieceIdx = pieceOrder[index];
-                                    return Draggable<int>(
-                                      data: pieceIdx,
-                                      feedback: Material(
-                                        color: Colors.transparent,
-                                        child: Transform.translate(
-                                          offset: const Offset(-44, -44),
-                                          child: SizedBox(
-                                            width: 88,
-                                            height: 88,
-                                            child: _PuzzlePiece(
-                                              imageProvider: _imageProvider,
-                                              rows: rows,
-                                              cols: cols,
-                                              row: pieceIdx ~/ cols,
-                                              col: pieceIdx % cols,
-                                            ),
+                              child: ListView.separated(
+                                scrollDirection: Axis.vertical,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                itemBuilder: (context, index) {
+                                  final pieceIdx = pieceOrder[index];
+                                  return Draggable<int>(
+                                    data: pieceIdx,
+                                    feedback: Material(
+                                      color: Colors.transparent,
+                                      child: Transform.translate(
+                                        offset: const Offset(-44, -44),
+                                        child: SizedBox(
+                                          width: 88,
+                                          height: 88,
+                                          child: _PuzzlePiece(
+                                            imageProvider: _imageProvider,
+                                            rows: rows,
+                                            cols: cols,
+                                            row: pieceIdx ~/ cols,
+                                            col: pieceIdx % cols,
                                           ),
                                         ),
                                       ),
-                                      childWhenDragging: Opacity(
-                                        opacity: 0.25,
-                                        child: _trayPieceWidget(
-                                            _imageProvider, pieceIdx),
-                                      ),
-                                      onDragStarted: () => setState(
-                                          () => draggingIndex = pieceIdx),
-                                      onDraggableCanceled: (_, __) =>
-                                          setState(() => draggingIndex = null),
-                                      onDragEnd: (_) =>
-                                          setState(() => draggingIndex = null),
+                                    ),
+                                    childWhenDragging: Opacity(
+                                      opacity: 0.25,
                                       child: _trayPieceWidget(
                                           _imageProvider, pieceIdx),
-                                    );
-                                  },
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 12),
-                                  itemCount: pieceOrder.length,
-                                ),
+                                    ),
+                                    onDragStarted: () => setState(
+                                        () => draggingIndex = pieceIdx),
+                                    onDraggableCanceled: (_, __) =>
+                                        setState(() => draggingIndex = null),
+                                    onDragEnd: (_) =>
+                                        setState(() => draggingIndex = null),
+                                    child: _trayPieceWidget(
+                                        _imageProvider, pieceIdx),
+                                  );
+                                },
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 12),
+                                itemCount: pieceOrder.length,
                               ),
                             ),
                           ],
@@ -576,43 +590,39 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   }
 
   Widget _trayPieceWidget(ImageProvider provider, int pieceIdx) {
-    final double tileAspect =
-        (cols > 0 && rows > 0) ? (_imageAspectRatio ?? 1.0) * rows / cols : 1.0;
-    const double trayPieceHeight = 40;
-    final double trayPieceWidth = trayPieceHeight * tileAspect;
-    return AspectRatio(
-      aspectRatio: tileAspect,
-      child: Container(
-        width: trayPieceWidth,
-        height: trayPieceHeight,
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 3))
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: SizedBox(
-              width: trayPieceWidth,
-              height: trayPieceHeight,
-              child: _PuzzlePiece(
-                imageProvider: provider,
-                rows: rows,
-                cols: cols,
-                row: pieceIdx ~/ cols,
-                col: pieceIdx % cols,
-              ),
-            ),
-          ),
-        ),
+    // Use a fixed size for tray pieces so all are visible
+    const double trayPieceSize = 64;
+    final int totalPieces = rows * cols;
+    final bool valid = pieceIdx >= 0 && pieceIdx < totalPieces;
+    return Container(
+      width: trayPieceSize,
+      height: trayPieceSize,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 3))
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: valid
+            ? RepaintBoundary(
+                key: ValueKey('tray_rb_${pieceIdx}_${rows}_${cols}'),
+                child: _PuzzlePiece(
+                  key: ValueKey('tray_${pieceIdx}_${rows}_${cols}'),
+                  imageProvider: provider,
+                  rows: rows,
+                  cols: cols,
+                  row: pieceIdx ~/ cols,
+                  col: pieceIdx % cols,
+                ),
+              )
+            : Center(child: Icon(Icons.error, color: Colors.red)),
       ),
     );
   }
@@ -705,12 +715,16 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                     child: SizedBox(
                       width: tileWidth,
                       height: tileHeight,
-                      child: _PuzzlePiece(
-                        imageProvider: imageProvider,
-                        rows: rows,
-                        cols: cols,
-                        row: pieceIdx ~/ cols,
-                        col: pieceIdx % cols,
+                      child: RepaintBoundary(
+                        key: ValueKey('board_rb_${index}_${rows}_${cols}'),
+                        child: _PuzzlePiece(
+                          key: ValueKey('board_${index}_${rows}_${cols}'),
+                          imageProvider: imageProvider,
+                          rows: rows,
+                          cols: cols,
+                          row: pieceIdx ~/ cols,
+                          col: pieceIdx % cols,
+                        ),
                       ),
                     ),
                   ),
@@ -777,29 +791,29 @@ class _PuzzlePiece extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double pieceWidth = constraints.maxWidth;
-        final double pieceHeight = constraints.maxHeight;
-        return ClipRect(
-          child: Stack(
-            children: [
-              Positioned(
-                left: -col * pieceWidth,
-                top: -row * pieceHeight,
-                width: pieceWidth * cols,
-                height: pieceHeight * rows,
-                child: Image(
-                  image: imageProvider,
-                  fit: BoxFit.cover,
-                  width: pieceWidth * cols,
-                  height: pieceHeight * rows,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    return ClipRect(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return FractionallySizedBox(
+            widthFactor: cols.toDouble(),
+            heightFactor: rows.toDouble(),
+            alignment: Alignment(
+              -1.0 + (col * 2 + 1) / cols,
+              -1.0 + (row * 2 + 1) / rows,
+            ),
+            child: Image(
+              image: imageProvider,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.red.withOpacity(0.2),
+                  child: const Center(child: FlutterLogo(size: 40)),
+                );
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }
