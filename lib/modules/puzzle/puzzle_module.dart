@@ -19,7 +19,7 @@ class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
     _PuzzleTheme('Sea', Icons.waves, Color(0xFF40c4ff)),
     _PuzzleTheme('Jungle', Icons.park, Color(0xFF66bb6a)),
-    _PuzzleTheme('Flying', Icons.flight, Color(0xFFb39ddb)),
+    _PuzzleTheme('Flying', Icons.flutter_dash, Color(0xFFb39ddb)), // Changed to bird icon
   ];
   const PuzzleTypeScreen({super.key});
   @override
@@ -41,38 +41,32 @@ class PuzzleTypeScreen extends StatelessWidget {
               ),
               Expanded(
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (final type in types)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12.0),
-                          child: ElevatedButton.icon(
-                            icon: Icon(type.icon, color: Colors.white),
-                            label: Text(type.name,
-                                style: const TextStyle(
-                                    fontFamily: 'Nunito', fontSize: 22)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: type.color,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 18),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18)),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final buttonHeight = (constraints.maxHeight - 120) / 3;
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          for (final type in types)
+                            _AnimatedBigTypeButton(
+                              type: type,
+                              height: buttonHeight,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => PuzzleLevelScreen(type: type),
+                                  ),
+                                );
+                              },
                             ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => PuzzleLevelScreen(type: type),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
+
             ],
           ),
         ],
@@ -1115,15 +1109,193 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   }
 }
 
-// ...existing code...
+// --- Animated, gamified, kid-friendly big type button ---
+class _AnimatedBigTypeButton extends StatefulWidget {
+  final _PuzzleTheme type;
+  final double height;
+  final VoidCallback onTap;
+  const _AnimatedBigTypeButton({required this.type, required this.height, required this.onTap});
+  @override
+  State<_AnimatedBigTypeButton> createState() => _AnimatedBigTypeButtonState();
+}
 
-// ...existing code...
+class _AnimatedBigTypeButtonState extends State<_AnimatedBigTypeButton> with SingleTickerProviderStateMixin {
+  double _scale = 1.0;
+  late AnimationController _controller;
+  late Animation<double> _sparkleAnim;
 
-// Top-level painter for puzzle piece cropping
-// ...existing code...
-// --------------------------
-// Rest of the screens & helpers (top-level)
-// --------------------------
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
+    _sparkleAnim = Tween<double>(begin: 0.85, end: 1.15).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _scale = 0.96),
+        onTapUp: (_) => setState(() => _scale = 1.0),
+        onTapCancel: () => setState(() => _scale = 1.0),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _scale,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                height: widget.height.clamp(120, 200),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      widget.type.color.withOpacity(0.95),
+                      Colors.white.withOpacity(0.85),
+                      widget.type.color.withOpacity(0.85),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(36),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.type.color.withOpacity(0.25),
+                      blurRadius: 32,
+                      spreadRadius: 4,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: widget.type.color.withOpacity(0.7),
+                    width: 4,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedBuilder(
+                      animation: _sparkleAnim,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: _sparkleAnim.value,
+                          child: Icon(widget.type.icon, size: 54, color: Colors.white.withOpacity(0.95)),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 24),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.type.name,
+                          style: TextStyle(
+                            fontFamily: 'Fredoka',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 32,
+                            color: widget.type.color.darken(0.2),
+                            letterSpacing: 1.2,
+                            shadows: [
+                              Shadow(
+                                color: widget.type.color.withOpacity(0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _AnimatedSparkle(color: widget.type.color),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Let\'s Go!',
+                              style: TextStyle(
+                                fontFamily: 'Nunito',
+                                fontWeight: FontWeight.w600,
+                                fontSize: 18,
+                                color: widget.type.color.darken(0.1),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Confetti overlay for extra fun
+              Positioned(
+                right: 32,
+                top: 12,
+                child: Opacity(
+                  opacity: 0.7,
+                  child: Icon(Icons.celebration, color: widget.type.color, size: 36),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Helper sparkle animation
+class _AnimatedSparkle extends StatefulWidget {
+  final Color color;
+  const _AnimatedSparkle({required this.color});
+  @override
+  State<_AnimatedSparkle> createState() => _AnimatedSparkleState();
+}
+class _AnimatedSparkleState extends State<_AnimatedSparkle> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _anim;
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.7, end: 1.2).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _anim.value,
+          child: Icon(Icons.auto_awesome, color: widget.color, size: 28),
+        );
+      },
+    );
+  }
+}
+
+// Color darken extension
+extension ColorDarken on Color {
+  Color darken([double amount = .1]) {
+    assert(amount >= 0 && amount <= 1);
+    final hsl = HSLColor.fromColor(this);
+    final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return hslDark.toColor();
+  }
+}
 
 class _PuzzleTheme {
   final String name;
@@ -1131,8 +1303,5 @@ class _PuzzleTheme {
   final Color color;
   const _PuzzleTheme(this.name, this.icon, this.color);
 }
-
-// ...existing code...
-// AnimatedBubbles and helpers moved to widgets/animated_bubbles.dart
 
 /* Puzzle selection screens (Type -> Level -> Play) */
