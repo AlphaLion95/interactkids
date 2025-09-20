@@ -456,15 +456,23 @@ class _PuzzleImageTile extends StatelessWidget {
                         imagePath,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Center(
-                            child: Icon(Icons.image,
-                                color: Colors.grey[400], size: 40)),
+                          child: Icon(
+                            Icons.image,
+                            color: Colors.grey[400],
+                            size: 40,
+                          ),
+                        ),
                       )
                     : Image.file(
                         File(imagePath),
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Center(
-                            child: Icon(Icons.broken_image,
-                                color: Colors.grey[400], size: 40)),
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.grey[400],
+                            size: 40,
+                          ),
+                        ),
                       ),
               ),
             ),
@@ -513,6 +521,11 @@ class PuzzleScreen extends StatefulWidget {
 }
 
 class _PuzzleScreenState extends State<PuzzleScreen> {
+  // For advanced drag highlight
+  Offset? _dragGlobalPosition;
+  int? _draggingPieceIdx;
+  final Map<int, GlobalKey> _slotKeys = {};
+  int? _highlightedSlotIdx;
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -556,6 +569,10 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
       setState(() {});
     } else {
       _resetGame();
+    }
+    // Initialize slot keys
+    for (int i = 0; i < rows * cols; i++) {
+      _slotKeys[i] = GlobalKey();
     }
   }
 
@@ -685,156 +702,251 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     print('DEBUG: pieceOrder = '
         '${pieceOrder.toString()}');
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Puzzle', style: TextStyle(fontFamily: 'Nunito')),
-        backgroundColor: Colors.orange,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _resetGame,
-            tooltip: 'Reset',
-          ),
-        ],
-      ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isLandscape = constraints.maxWidth > constraints.maxHeight;
-            return isLandscape
-                ? Stack(
-                    children: [
-                      const Positioned.fill(child: AnimatedBubbles()),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 500,
-                                  maxHeight: 500,
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: (_imageAspectRatio == null)
-                                      ? const Center(
-                                          child: CircularProgressIndicator())
-                                      : AspectRatio(
-                                          aspectRatio: _imageAspectRatio!,
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                            child: Stack(
-                                              children: [
-                                                Positioned.fill(
-                                                  child: Opacity(
-                                                    opacity: 0.7,
-                                                    child: Image(
-                                                      image: _imageProvider,
-                                                      fit: BoxFit.fill,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Positioned.fill(
-                                                  child: _PuzzleBoardWithTray(
-                                                    imageProvider:
-                                                        _imageProvider,
-                                                    rows: rows,
-                                                    cols: cols,
-                                                    boardState: boardState,
-                                                    draggingIndex:
-                                                        draggingIndex,
-                                                    onPieceDropped:
-                                                        _onPieceDroppedToBoard,
-                                                    onPieceRemoved:
-                                                        _onPieceRemovedFromBoard,
-                                                    trayPieces: pieceOrder,
-                                                    onStartDraggingFromTray:
-                                                        (index) {
-                                                      setState(() {
-                                                        draggingIndex = index;
-                                                      });
-                                                    },
-                                                    onEndDragging: () {
-                                                      setState(() {
-                                                        draggingIndex = null;
-                                                      });
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Container(
-                            width: 180,
-                            color: Colors.grey.withOpacity(0.04),
-                            child: Column(
-                              children: [
-                                const SizedBox(height: 16),
-                                Expanded(
-                                  child: ListView.separated(
-                                    scrollDirection: Axis.vertical,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12),
-                                    itemBuilder: (context, index) {
-                                      final pieceIdx = pieceOrder[index];
-                                      return Draggable<int>(
-                                        data: pieceIdx,
-                                        feedback: Material(
-                                          color: Colors.transparent,
-                                          child: Transform.translate(
-                                            offset: const Offset(-44, -44),
-                                            child: SizedBox(
-                                              width: 88,
-                                              height: 88,
-                                              child: _PuzzlePiece(
-                                                imageProvider: _imageProvider,
-                                                rows: rows,
-                                                cols: cols,
-                                                row: pieceIdx ~/ cols,
-                                                col: pieceIdx % cols,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        childWhenDragging: Opacity(
-                                          opacity: 0.25,
-                                          child: _trayPieceWidget(
-                                              _imageProvider, pieceIdx),
-                                        ),
-                                        onDragStarted: () => setState(
-                                            () => draggingIndex = pieceIdx),
-                                        onDraggableCanceled: (_, __) =>
-                                            setState(
-                                                () => draggingIndex = null),
-                                        onDragEnd: (_) => setState(
-                                            () => draggingIndex = null),
-                                        child: _trayPieceWidget(
-                                            _imageProvider, pieceIdx),
-                                      );
-                                    },
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 12),
-                                    itemCount: pieceOrder.length,
-                                  ),
-                                ),
-                              ],
-                            ),
+        child: Listener(
+          onPointerMove: (details) {
+            setState(() {
+              _dragGlobalPosition = details.position;
+            });
+          },
+          onPointerUp: (_) {
+            // On drag end, if a piece is being dragged and a slot is highlighted, drop it there
+            if (_draggingPieceIdx != null && _highlightedSlotIdx != null) {
+              _onPieceDroppedToBoard(_highlightedSlotIdx!, _draggingPieceIdx!);
+            }
+            setState(() {
+              _dragGlobalPosition = null;
+              _draggingPieceIdx = null;
+              _highlightedSlotIdx = null;
+            });
+          },
+          child: Stack(
+            children: [
+              // Floating Back Button (top left, pillow style, outside puzzle box)
+              Positioned(
+                top: 18,
+                left: 18,
+                child: Material(
+                  color: Colors.white,
+                  elevation: 8,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.10),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                    ],
-                  )
-                : const Center(
-                    child: Text(
-                        'Please rotate your device to landscape for the best puzzle experience.'),
-                  );
-          },
+                      child: const Center(
+                        child: Icon(Icons.arrow_back,
+                            color: Colors.orange, size: 30),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Main content
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isLandscape =
+                      constraints.maxWidth > constraints.maxHeight;
+                  return isLandscape
+                      ? Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 500,
+                                    maxHeight: 500,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: (_imageAspectRatio == null)
+                                        ? const Center(
+                                            child: CircularProgressIndicator())
+                                        : Stack(
+                                            children: [
+                                              const Positioned.fill(
+                                                  child: AnimatedBubbles()),
+                                              AspectRatio(
+                                                aspectRatio: _imageAspectRatio!,
+                                                child: ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                  child: Stack(
+                                                    children: [
+                                                      Positioned.fill(
+                                                        child: Opacity(
+                                                          opacity: 0.7,
+                                                          child: Image(
+                                                            image:
+                                                                _imageProvider,
+                                                            fit: BoxFit.fill,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Positioned.fill(
+                                                        child:
+                                                            _PuzzleBoardWithTray(
+                                                          imageProvider:
+                                                              _imageProvider,
+                                                          rows: rows,
+                                                          cols: cols,
+                                                          boardState:
+                                                              boardState,
+                                                          draggingIndex:
+                                                              draggingIndex,
+                                                          onPieceDropped:
+                                                              _onPieceDroppedToBoard,
+                                                          onPieceRemoved:
+                                                              _onPieceRemovedFromBoard,
+                                                          trayPieces:
+                                                              pieceOrder,
+                                                          onStartDraggingFromTray:
+                                                              (index) {
+                                                            setState(() {
+                                                              draggingIndex =
+                                                                  index;
+                                                              _draggingPieceIdx =
+                                                                  index;
+                                                            });
+                                                          },
+                                                          onEndDragging: () {
+                                                            setState(() {
+                                                              draggingIndex =
+                                                                  null;
+                                                              _draggingPieceIdx =
+                                                                  null;
+                                                            });
+                                                          },
+                                                          slotKeys: _slotKeys,
+                                                          dragGlobalPosition:
+                                                              _dragGlobalPosition,
+                                                          draggingPieceIdx:
+                                                              _draggingPieceIdx,
+                                                          onHighlightSlot:
+                                                              (idx) {
+                                                            if (_highlightedSlotIdx !=
+                                                                idx) {
+                                                              setState(() {
+                                                                _highlightedSlotIdx =
+                                                                    idx;
+                                                              });
+                                                            }
+                                                          },
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              // Reset button floating at top right of puzzle area
+                                              Positioned(
+                                                top: 0,
+                                                right: 0,
+                                                child: Material(
+                                                  color: Colors.transparent,
+                                                  child: IconButton(
+                                                    icon: const Icon(
+                                                        Icons.refresh,
+                                                        color: Colors.orange,
+                                                        size: 32),
+                                                    onPressed: _resetGame,
+                                                    tooltip: 'Reset',
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 180,
+                              color: Colors.grey.withOpacity(0.04),
+                              child: Column(
+                                children: [
+                                  const SizedBox(height: 16),
+                                  Expanded(
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.vertical,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12),
+                                      itemBuilder: (context, index) {
+                                        final pieceIdx = pieceOrder[index];
+                                        return Draggable<int>(
+                                          data: pieceIdx,
+                                          feedback: Material(
+                                            color: Colors.transparent,
+                                            child: Transform.translate(
+                                              // Offset so the top left of the piece is at the finger, not the center
+                                              offset: Offset(0, 0),
+                                              child: SizedBox(
+                                                width: 88,
+                                                height: 88,
+                                                child: _PuzzlePiece(
+                                                  imageProvider: _imageProvider,
+                                                  rows: rows,
+                                                  cols: cols,
+                                                  row: pieceIdx ~/ cols,
+                                                  col: pieceIdx % cols,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          childWhenDragging: Opacity(
+                                            opacity: 0.25,
+                                            child: _trayPieceWidget(
+                                                _imageProvider, pieceIdx),
+                                          ),
+                                          onDragStarted: () => setState(() {
+                                            draggingIndex = pieceIdx;
+                                            _draggingPieceIdx = pieceIdx;
+                                          }),
+                                          onDraggableCanceled: (_, __) =>
+                                              setState(() {
+                                            draggingIndex = null;
+                                            _draggingPieceIdx = null;
+                                          }),
+                                          onDragEnd: (_) => setState(() {
+                                            draggingIndex = null;
+                                            _draggingPieceIdx = null;
+                                          }),
+                                          child: _trayPieceWidget(
+                                              _imageProvider, pieceIdx),
+                                        );
+                                      },
+                                      separatorBuilder: (_, __) =>
+                                          const SizedBox(height: 12),
+                                      itemCount: pieceOrder.length,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      : const Center(
+                          child: Text(
+                              'Please rotate your device to landscape for the best puzzle experience.'),
+                        );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -901,6 +1013,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
 }
 
 class _PuzzleBoardWithTray extends StatelessWidget {
+  final void Function(int?)? onHighlightSlot;
   final ImageProvider imageProvider;
   final int rows;
   final int cols;
@@ -911,6 +1024,10 @@ class _PuzzleBoardWithTray extends StatelessWidget {
   final void Function(int boardIdx)? onPieceRemoved;
   final void Function(int pieceIdx)? onStartDraggingFromTray;
   final VoidCallback? onEndDragging;
+
+  final Map<int, GlobalKey>? slotKeys;
+  final Offset? dragGlobalPosition;
+  final int? draggingPieceIdx;
 
   const _PuzzleBoardWithTray({
     Key? key,
@@ -924,6 +1041,10 @@ class _PuzzleBoardWithTray extends StatelessWidget {
     this.onPieceRemoved,
     this.onStartDraggingFromTray,
     this.onEndDragging,
+    this.slotKeys,
+    this.dragGlobalPosition,
+    this.draggingPieceIdx,
+    this.onHighlightSlot,
   }) : super(key: key);
 
   @override
@@ -935,10 +1056,54 @@ class _PuzzleBoardWithTray extends StatelessWidget {
 
       final children = <Widget>[];
 
+      // --- Find the empty slot with the largest overlap (if any) ---
+      int? highlightIndex;
+      double maxOverlap = 0.0;
+      Map<int, Rect> slotRects = {};
+      Rect? dragRect;
+      if (dragGlobalPosition != null && draggingPieceIdx != null) {
+        // Compute dragRect size
+        double dragW = 88, dragH = 88;
+        if (trayPieces != null && !trayPieces!.contains(draggingPieceIdx)) {
+          // Dragging from board
+          dragW = tileWidth;
+          dragH = tileHeight;
+        }
+        dragRect = Rect.fromCenter(
+            center: dragGlobalPosition!, width: dragW, height: dragH);
+        // For each empty slot, compute overlap area
+        for (int index = 0; index < rows * cols; index++) {
+          if (boardState[index] != null) continue;
+          final key = slotKeys != null ? slotKeys![index] : null;
+          if (key == null) continue;
+          final renderBox =
+              key.currentContext?.findRenderObject() as RenderBox?;
+          if (renderBox == null) continue;
+          final slotRect =
+              renderBox.localToGlobal(Offset.zero) & renderBox.size;
+          slotRects[index] = slotRect;
+          if (dragRect.overlaps(slotRect)) {
+            final overlapRect = dragRect.intersect(slotRect);
+            final overlapArea = overlapRect.width * overlapRect.height;
+            if (overlapArea > maxOverlap) {
+              maxOverlap = overlapArea;
+              highlightIndex = index;
+            }
+          }
+        }
+      }
+      // Notify parent of the highlighted slot, but only after build
+      if (onHighlightSlot != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onHighlightSlot!(highlightIndex);
+        });
+      }
+
       for (int index = 0; index < rows * cols; index++) {
         final int row = index ~/ cols;
         final int col = index % cols;
         final int? pieceIdx = boardState[index];
+        final key = slotKeys != null ? slotKeys![index] : null;
 
         children.add(Positioned(
           left: col * tileWidth,
@@ -958,6 +1123,7 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                   feedback: Material(
                     color: Colors.transparent,
                     child: Transform.translate(
+                      // Center the piece under the finger
                       offset: Offset(-tileWidth / 2, -tileHeight / 2),
                       child: SizedBox(
                         width: tileWidth,
@@ -1002,38 +1168,41 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                   ),
                 );
               } else {
-                // empty slot: show only highlight if dragging over
-                final bool isHighlighted = candidateData.isNotEmpty;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
+                // Only highlight the empty slot with the largest overlap
+                bool isHighlighted = (highlightIndex == index);
+                return Container(
+                  key: key,
                   width: tileWidth,
                   height: tileHeight,
-                  decoration: BoxDecoration(
-                    border: isHighlighted
-                        ? Border.all(color: Colors.deepOrange, width: 4)
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    decoration: BoxDecoration(
+                      border: isHighlighted
+                          ? Border.all(color: Colors.deepOrange, width: 4)
+                          : null,
+                      borderRadius: BorderRadius.circular(8),
+                      color: isHighlighted
+                          ? Colors.orange.withOpacity(0.18)
+                          : Colors.transparent,
+                      boxShadow: isHighlighted
+                          ? [
+                              BoxShadow(
+                                color: Colors.orange.withOpacity(0.18),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                                offset: Offset(0, 4),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: isHighlighted
+                        ? Center(
+                            child: Opacity(
+                                opacity: 0.7,
+                                child: Icon(Icons.open_in_new,
+                                    size: 32, color: Colors.deepOrange)))
                         : null,
-                    borderRadius: BorderRadius.circular(8),
-                    color: isHighlighted
-                        ? Colors.orange.withOpacity(0.18)
-                        : Colors.transparent,
-                    boxShadow: isHighlighted
-                        ? [
-                            BoxShadow(
-                              color: Colors.orange.withOpacity(0.18),
-                              blurRadius: 12,
-                              spreadRadius: 2,
-                              offset: Offset(0, 4),
-                            ),
-                          ]
-                        : [],
                   ),
-                  child: isHighlighted
-                      ? Center(
-                          child: Opacity(
-                              opacity: 0.7,
-                              child: Icon(Icons.open_in_new,
-                                  size: 32, color: Colors.deepOrange)))
-                      : null,
                 );
               }
             },
