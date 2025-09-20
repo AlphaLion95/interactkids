@@ -121,7 +121,6 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
       });
     }
   }
-
   final List<String> levels = ['Easy', 'Medium', 'Hard'];
   late Map<String, List<String>> defaultImages;
   late Map<String, List<String>> userImages;
@@ -239,8 +238,7 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                               icon: const Icon(Icons.edit,
                                                   size: 18, color: Colors.blue),
                                               padding: EdgeInsets.zero,
-                                              constraints:
-                                                  const BoxConstraints(),
+                                              constraints: const BoxConstraints(),
                                               onPressed: null,
                                             ),
                                           ),
@@ -250,8 +248,7 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                                               icon: const Icon(Icons.delete,
                                                   size: 18, color: Colors.red),
                                               padding: EdgeInsets.zero,
-                                              constraints:
-                                                  const BoxConstraints(),
+                                              constraints: const BoxConstraints(),
                                               onPressed: null,
                                             ),
                                           ),

@@ -1,15 +1,11 @@
-// --- PUZZLE PIECE PAINTER (top-level, for cropping) ---
-
 // --- PUZZLE SELECTION SCREENS (Type -> Level -> Play) ---
 
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
-import 'package:image_cropper/image_cropper.dart';
 
 class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
@@ -85,43 +81,6 @@ class PuzzleLevelScreen extends StatefulWidget {
 }
 
 class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
-  Future<void> _editImage(String level, String imgPath) async {
-    final cropped = await ImageCropper().cropImage(
-      sourcePath: imgPath,
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Edit Puzzle Image',
-          toolbarColor: Colors.orange,
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.original,
-          lockAspectRatio: false,
-          aspectRatioPresets: [
-            CropAspectRatioPreset.square,
-            CropAspectRatioPreset.ratio3x2,
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio16x9,
-          ],
-        ),
-        IOSUiSettings(
-          title: 'Edit Puzzle Image',
-          aspectRatioLockEnabled: false,
-        ),
-      ],
-    );
-    if (cropped != null && cropped.path != imgPath) {
-      setState(() {
-        final idx = userImages[level]!.indexOf(imgPath);
-        if (idx != -1) {
-          userImages[level]![idx] = cropped.path;
-          // Optionally reset progress for the new image
-          progress[level]!.remove(imgPath);
-          progress[level]![cropped.path] = 0.0;
-        }
-      });
-    }
-  }
-
   final List<String> levels = ['Easy', 'Medium', 'Hard'];
   late Map<String, List<String>> defaultImages;
   late Map<String, List<String>> userImages;
@@ -164,10 +123,6 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
         : level == 'Medium'
             ? 4
             : 5;
-    // Ensure progress entry exists for default images
-    if (!progress[level]!.containsKey(imagePath)) {
-      progress[level]![imagePath] = 0.0;
-    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -218,89 +173,16 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                           scrollDirection: Axis.horizontal,
                           children: [
                             for (final img in defaultImages[level]!)
-                              GestureDetector(
+                              _PuzzleImageTile(
+                                imagePath: img,
+                                progress: progress[level]![img] ?? 0.0,
                                 onTap: () => _onImageTap(level, img),
-                                child: Stack(
-                                  children: [
-                                    _PuzzleImageTile(
-                                      imagePath: img,
-                                      progress: progress[level]![img] ?? 0.0,
-                                      onTap: () {}, // no-op, handled by parent
-                                    ),
-                                    // Invisible edit/delete for alignment
-                                    Positioned(
-                                      top: 2,
-                                      right: 2,
-                                      child: Row(
-                                        children: [
-                                          Opacity(
-                                            opacity: 0.0,
-                                            child: IconButton(
-                                              icon: const Icon(Icons.edit,
-                                                  size: 18, color: Colors.blue),
-                                              padding: EdgeInsets.zero,
-                                              constraints:
-                                                  const BoxConstraints(),
-                                              onPressed: null,
-                                            ),
-                                          ),
-                                          Opacity(
-                                            opacity: 0.0,
-                                            child: IconButton(
-                                              icon: const Icon(Icons.delete,
-                                                  size: 18, color: Colors.red),
-                                              padding: EdgeInsets.zero,
-                                              constraints:
-                                                  const BoxConstraints(),
-                                              onPressed: null,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ),
                             for (final img in userImages[level]!)
-                              Stack(
-                                children: [
-                                  _PuzzleImageTile(
-                                    imagePath: img,
-                                    progress: progress[level]![img] ?? 0.0,
-                                    onTap: () => _onImageTap(level, img),
-                                  ),
-                                  Positioned(
-                                    top: 2,
-                                    right: 2,
-                                    child: Row(
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.edit,
-                                              size: 18, color: Colors.blue),
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
-                                          tooltip: 'Edit',
-                                          onPressed: () {
-                                            _editImage(level, img);
-                                          },
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete,
-                                              size: 18, color: Colors.red),
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
-                                          tooltip: 'Delete',
-                                          onPressed: () {
-                                            setState(() {
-                                              userImages[level]!.remove(img);
-                                              progress[level]!.remove(img);
-                                            });
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              _PuzzleImageTile(
+                                imagePath: img,
+                                progress: progress[level]![img] ?? 0.0,
+                                onTap: () => _onImageTap(level, img),
                               ),
                           ],
                         ),
@@ -329,27 +211,26 @@ class _PuzzleImageTile extends StatelessWidget {
     final bool isAsset = imagePath.startsWith('assets/');
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 90,
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.orange.withOpacity(0.18),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 4)),
-              ],
-            ),
-            child: Container(
+      child: Container(
+        width: 90,
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.7),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+                color: Colors.orange.withOpacity(0.18),
+                blurRadius: 12,
+                spreadRadius: 2,
+                offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
               width: 74,
               height: 74,
-              margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
@@ -379,21 +260,22 @@ class _PuzzleImageTile extends StatelessWidget {
                       ),
               ),
             ),
-          ),
-          const SizedBox(height: 4),
-          SizedBox(
-            width: 74,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-                backgroundColor: Colors.grey[300],
-                color: Colors.green,
+            Positioned(
+              bottom: 6,
+              left: 8,
+              right: 8,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: Colors.grey[300],
+                  color: Colors.green,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -712,57 +594,36 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     const double trayPieceSize = 64;
     final int totalPieces = rows * cols;
     final bool valid = pieceIdx >= 0 && pieceIdx < totalPieces;
-    // Make each tray slot a DragTarget so it can accept pieces from the board
-    return DragTarget<int>(
-      onWillAccept: (data) {
-        // Accept if the piece is not already in the tray
-        return data != null && !pieceOrder.contains(data);
-      },
-      onAccept: (data) {
-        setState(() {
-          // Remove from board and add back to tray
-          final boardIdx = boardState.indexOf(data);
-          if (boardIdx != -1) {
-            boardState[boardIdx] = null;
-            if (!pieceOrder.contains(data)) {
-              pieceOrder.add(data);
-            }
-          }
-        });
-      },
-      builder: (context, candidateData, rejectedData) {
-        return Container(
-          width: trayPieceSize,
-          height: trayPieceSize,
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3))
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: valid
-                ? RepaintBoundary(
-                    key: ValueKey('tray_rb_${pieceIdx}_${rows}_${cols}'),
-                    child: _PuzzlePiece(
-                      key: ValueKey('tray_${pieceIdx}_${rows}_${cols}'),
-                      imageProvider: provider,
-                      rows: rows,
-                      cols: cols,
-                      row: pieceIdx ~/ cols,
-                      col: pieceIdx % cols,
-                    ),
-                  )
-                : Center(child: Icon(Icons.error, color: Colors.red)),
-          ),
-        );
-      },
+    return Container(
+      width: trayPieceSize,
+      height: trayPieceSize,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 3))
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: valid
+            ? RepaintBoundary(
+                key: ValueKey('tray_rb_${pieceIdx}_${rows}_${cols}'),
+                child: _PuzzlePiece(
+                  key: ValueKey('tray_${pieceIdx}_${rows}_${cols}'),
+                  imageProvider: provider,
+                  rows: rows,
+                  cols: cols,
+                  row: pieceIdx ~/ cols,
+                  col: pieceIdx % cols,
+                ),
+              )
+            : Center(child: Icon(Icons.error, color: Colors.red)),
+      ),
     );
   }
 }
@@ -919,7 +780,6 @@ class _PuzzlePiece extends StatelessWidget {
   final int cols;
   final int row;
   final int col;
-
   const _PuzzlePiece({
     Key? key,
     required this.imageProvider,
@@ -931,75 +791,52 @@ class _PuzzlePiece extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<ImageInfo>(
-      future: _getImageInfo(imageProvider),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox.shrink();
+    // For visual confirmation, use FlutterLogo if image fails
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        Widget imageWidget;
+        // Determine if asset or file
+        if (imageProvider is AssetImage) {
+          final asset = (imageProvider as AssetImage).assetName;
+          imageWidget = Image.asset(
+            asset,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Colors.red.withOpacity(0.2),
+                child: const Center(child: FlutterLogo(size: 40)),
+              );
+            },
+          );
+        } else if (imageProvider is FileImage) {
+          final file = (imageProvider as FileImage).file;
+          imageWidget = Image.file(
+            file,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Colors.red.withOpacity(0.2),
+                child: const Center(child: FlutterLogo(size: 40)),
+              );
+            },
+          );
+        } else {
+          imageWidget = const FlutterLogo();
         }
-        final imageInfo = snapshot.data!;
-        final image = imageInfo.image;
-
-        return CustomPaint(
-          size: Size.infinite,
-          painter: _PuzzlePainter(
-            image: image,
-            rows: rows,
-            cols: cols,
-            row: row,
-            col: col,
+        return ClipRect(
+          child: Align(
+            alignment: Alignment(
+              -1.0 + (2 * col + 1) / cols,
+              -1.0 + (2 * row + 1) / rows,
+            ),
+            widthFactor: 1 / cols,
+            heightFactor: 1 / rows,
+            child: imageWidget,
           ),
         );
       },
     );
   }
-
-  Future<ImageInfo> _getImageInfo(ImageProvider provider) async {
-    final completer = Completer<ImageInfo>();
-    final stream = provider.resolve(const ImageConfiguration());
-    final listener = ImageStreamListener((info, _) {
-      completer.complete(info);
-    });
-    stream.addListener(listener);
-    return completer.future;
-  }
-}
-
-// Top-level painter for puzzle piece cropping
-class _PuzzlePainter extends CustomPainter {
-  final ui.Image image;
-  final int rows;
-  final int cols;
-  final int row;
-  final int col;
-
-  _PuzzlePainter({
-    required this.image,
-    required this.rows,
-    required this.cols,
-    required this.row,
-    required this.col,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final pieceWidth = image.width / cols;
-    final pieceHeight = image.height / rows;
-
-    final src = Rect.fromLTWH(
-      col * pieceWidth,
-      row * pieceHeight,
-      pieceWidth,
-      pieceHeight,
-    );
-
-    final dst = Rect.fromLTWH(0, 0, size.width, size.height);
-
-    canvas.drawImageRect(image, src, dst, Paint());
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 // --------------------------
 // Rest of the screens & helpers (top-level)

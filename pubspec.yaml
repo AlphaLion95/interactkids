@@ -16,6 +16,7 @@ dependencies:
   provider: ^6.1.2
   image_picker: ^1.0.7
   confetti: ^0.7.0
+  image_cropper: ^10.0.0+1
 
 dev_dependencies:
   flutter_test:

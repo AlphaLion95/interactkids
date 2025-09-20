@@ -88,6 +88,13 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
   Future<void> _editImage(String level, String imgPath) async {
     final cropped = await ImageCropper().cropImage(
       sourcePath: imgPath,
+      aspectRatioPresets: [
+        CropAspectRatioPreset.square,
+        CropAspectRatioPreset.ratio3x2,
+        CropAspectRatioPreset.original,
+        CropAspectRatioPreset.ratio4x3,
+        CropAspectRatioPreset.ratio16x9,
+      ],
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: 'Edit Puzzle Image',
@@ -95,17 +102,9 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
           toolbarWidgetColor: Colors.white,
           initAspectRatio: CropAspectRatioPreset.original,
           lockAspectRatio: false,
-          aspectRatioPresets: [
-            CropAspectRatioPreset.square,
-            CropAspectRatioPreset.ratio3x2,
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio16x9,
-          ],
         ),
         IOSUiSettings(
           title: 'Edit Puzzle Image',
-          aspectRatioLockEnabled: false,
         ),
       ],
     );
@@ -121,7 +120,6 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
       });
     }
   }
-
   final List<String> levels = ['Easy', 'Medium', 'Hard'];
   late Map<String, List<String>> defaultImages;
   late Map<String, List<String>> userImages;
@@ -164,10 +162,6 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
         : level == 'Medium'
             ? 4
             : 5;
-    // Ensure progress entry exists for default images
-    if (!progress[level]!.containsKey(imagePath)) {
-      progress[level]![imagePath] = 0.0;
-    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -218,48 +212,43 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                           scrollDirection: Axis.horizontal,
                           children: [
                             for (final img in defaultImages[level]!)
-                              GestureDetector(
-                                onTap: () => _onImageTap(level, img),
-                                child: Stack(
-                                  children: [
-                                    _PuzzleImageTile(
-                                      imagePath: img,
-                                      progress: progress[level]![img] ?? 0.0,
-                                      onTap: () {}, // no-op, handled by parent
-                                    ),
-                                    // Invisible edit/delete for alignment
-                                    Positioned(
-                                      top: 2,
-                                      right: 2,
-                                      child: Row(
-                                        children: [
-                                          Opacity(
-                                            opacity: 0.0,
-                                            child: IconButton(
-                                              icon: const Icon(Icons.edit,
-                                                  size: 18, color: Colors.blue),
-                                              padding: EdgeInsets.zero,
-                                              constraints:
-                                                  const BoxConstraints(),
-                                              onPressed: null,
-                                            ),
+                              Stack(
+                                children: [
+                                  _PuzzleImageTile(
+                                    imagePath: img,
+                                    progress: progress[level]![img] ?? 0.0,
+                                    onTap: () => _onImageTap(level, img),
+                                  ),
+                                  // Invisible edit/delete for alignment
+                                  Positioned(
+                                    top: 2,
+                                    right: 2,
+                                    child: Row(
+                                      children: [
+                                        Opacity(
+                                          opacity: 0.0,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.edit,
+                                                size: 18, color: Colors.blue),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            onPressed: null,
                                           ),
-                                          Opacity(
-                                            opacity: 0.0,
-                                            child: IconButton(
-                                              icon: const Icon(Icons.delete,
-                                                  size: 18, color: Colors.red),
-                                              padding: EdgeInsets.zero,
-                                              constraints:
-                                                  const BoxConstraints(),
-                                              onPressed: null,
-                                            ),
+                                        ),
+                                        Opacity(
+                                          opacity: 0.0,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.delete,
+                                                size: 18, color: Colors.red),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            onPressed: null,
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             for (final img in userImages[level]!)
                               Stack(
@@ -329,27 +318,26 @@ class _PuzzleImageTile extends StatelessWidget {
     final bool isAsset = imagePath.startsWith('assets/');
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 90,
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.orange.withOpacity(0.18),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 4)),
-              ],
-            ),
-            child: Container(
+      child: Container(
+        width: 90,
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.7),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+                color: Colors.orange.withOpacity(0.18),
+                blurRadius: 12,
+                spreadRadius: 2,
+                offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
               width: 74,
               height: 74,
-              margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
@@ -379,21 +367,22 @@ class _PuzzleImageTile extends StatelessWidget {
                       ),
               ),
             ),
-          ),
-          const SizedBox(height: 4),
-          SizedBox(
-            width: 74,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-                backgroundColor: Colors.grey[300],
-                color: Colors.green,
+            Positioned(
+              bottom: 6,
+              left: 8,
+              right: 8,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: Colors.grey[300],
+                  color: Colors.green,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
