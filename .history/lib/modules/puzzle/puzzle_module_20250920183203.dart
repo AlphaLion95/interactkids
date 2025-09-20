@@ -2,18 +2,16 @@
 
 // --- PUZZLE SELECTION SCREENS (Type -> Level -> Play) ---
 
-// import 'dart:io';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:interactkids/modules/puzzle/widgets/puzzle_piece.dart';
-import 'package:interactkids/modules/puzzle/widgets/animated_bubbles.dart';
-import 'package:interactkids/modules/puzzle/widgets/puzzle_board_with_tray.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 
 class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
@@ -418,81 +416,84 @@ class _PuzzleImageTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isAsset = imagePath.startsWith('assets/');
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 90,
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.orange.withOpacity(0.18),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 4)),
-              ],
+    return Draggable<int>(
+      data: pieceIdx,
+      feedback: Material(
+        color: Colors.transparent,
+        child: Transform.translate(
+          // Center the piece under the finger
+          offset: const Offset(-44, -44),
+          child: SizedBox(
+            width: 88,
+            height: 88,
+            child: _PuzzlePiece(
+              imageProvider: _imageProvider,
+              rows: rows,
+              cols: cols,
+              row: pieceIdx ~/ cols,
+              col: pieceIdx % cols,
             ),
-            child: Container(
-              width: 74,
-              height: 74,
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.orange.withOpacity(0.10),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                      offset: Offset(0, 2)),
-                ],
-              ),
-              child: ClipOval(
-                child: isAsset
-                    ? Image.asset(
-                        imagePath,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Center(
-                          child: Icon(
-                            Icons.image,
-                            color: Colors.grey[400],
-                            size: 40,
-                          ),
-                        ),
-                      )
-                    : Image.file(
-                        File(imagePath),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Center(
-                          child: Icon(
-                            Icons.broken_image,
-                            color: Colors.grey[400],
-                            size: 40,
-                          ),
+          ),
+        ),
+      ),
+      childWhenDragging: Opacity(
+        opacity: 0.25,
+        child: _trayPieceWidget(
+            _imageProvider, pieceIdx),
+      ),
+      onDragStarted: () => setState(() {
+        draggingIndex = pieceIdx;
+        _draggingPieceIdx = pieceIdx;
+      }),
+      onDraggableCanceled: (_, __) => setState(() {
+        draggingIndex = null;
+        _draggingPieceIdx = null;
+      }),
+      onDragEnd: (_) => setState(() {
+        draggingIndex = null;
+        _draggingPieceIdx = null;
+      }),
+      child: _trayPieceWidget(
+          _imageProvider, pieceIdx),
+    );
+                            child: isAsset
+                  ? Image.asset(
+                      imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Icon(
+                          Icons.image,
+                          color: Colors.grey[400],
+                          size: 40,
                         ),
                       ),
-              ),
-            ),
+                    )
+                  : Image.file(
+                      File(imagePath),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          color: Colors.grey[400],
+                          size: 40,
+                        ),
+                      ),
+                    ),
           ),
-          const SizedBox(height: 4),
-          SizedBox(
-            width: 74,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-                backgroundColor: Colors.grey[300],
-                color: progress < 1.0 ? Colors.blue : Colors.green,
-              ),
-            ),
+        ),
+      ),
+      const SizedBox(height: 4),
+      SizedBox(
+        width: 74,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 8,
+            backgroundColor: Colors.grey[300],
+            color: Colors.green,
           ),
-        ],
+        ),
       ),
     );
   }
@@ -523,45 +524,10 @@ class PuzzleScreen extends StatefulWidget {
 }
 
 class _PuzzleScreenState extends State<PuzzleScreen> {
-  // Helper to update highlight index based on pointer position
-  void _updateHighlightSlot(Offset globalPosition) {
-    // Find the board area RenderBox
-    final boardBox = context.findRenderObject() as RenderBox?;
-    if (boardBox == null) return;
-    // Find the board widget's position and size
-    final boardStack = boardBox.size;
-    // Find the board area (centered in parent)
-    final boardWidth = 500.0; // match maxWidth constraint
-    final boardHeight = 500.0; // match maxHeight constraint
-    final parentSize = boardStack;
-    final boardLeft = (parentSize.width - boardWidth) / 2 + 16; // 16 padding
-    final boardTop = (parentSize.height - boardHeight) / 2 + 16;
-    final tileWidth = boardWidth / cols;
-    final tileHeight = boardHeight / rows;
-    // Convert global pointer to board-local
-    final local = Offset(globalPosition.dx - boardLeft, globalPosition.dy - boardTop);
-    int? foundIdx;
-    for (int idx = 0; idx < rows * cols; idx++) {
-      if (boardState[idx] != null) continue;
-      final row = idx ~/ cols;
-      final col = idx % cols;
-      final rect = Rect.fromLTWH(col * tileWidth, row * tileHeight, tileWidth, tileHeight).inflate(6);
-      if (rect.contains(local)) {
-        foundIdx = idx;
-        break;
-      }
-    }
-    if (_highlightedSlotIdx != foundIdx) {
-      setState(() {
-        _highlightedSlotIdx = foundIdx;
-      });
-    }
-  }
   // For advanced drag highlight
   Offset? _dragGlobalPosition;
   int? _draggingPieceIdx;
   final Map<int, GlobalKey> _slotKeys = {};
-  int? _highlightedSlotIdx;
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -738,25 +704,19 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     print('DEBUG: pieceOrder = '
         '${pieceOrder.toString()}');
     return Scaffold(
-      body: Listener(
-        onPointerMove: (details) {
-          setState(() {
-            _dragGlobalPosition = details.position;
-          });
-          _updateHighlightSlot(details.position);
-        },
-        onPointerUp: (_) {
-          // On drag end, if a piece is being dragged and a slot is highlighted, drop it there
-          if (_draggingPieceIdx != null && _highlightedSlotIdx != null) {
-            _onPieceDroppedToBoard(_highlightedSlotIdx!, _draggingPieceIdx!);
-          }
-          setState(() {
-            _dragGlobalPosition = null;
-            _draggingPieceIdx = null;
-            _highlightedSlotIdx = null;
-          });
-        },
-        child: SafeArea(
+      body: SafeArea(
+        child: Listener(
+          onPointerMove: (details) {
+            setState(() {
+              _dragGlobalPosition = details.position;
+            });
+          },
+          onPointerUp: (_) {
+            setState(() {
+              _dragGlobalPosition = null;
+              _draggingPieceIdx = null;
+            });
+          },
           child: Stack(
             children: [
               // Floating Back Button (top left, pillow style, outside puzzle box)
@@ -836,7 +796,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                                       ),
                                                       Positioned.fill(
                                                         child:
-                                                            PuzzleBoardWithTray(
+                                                            _PuzzleBoardWithTray(
                                                           imageProvider:
                                                               _imageProvider,
                                                           rows: rows,
@@ -873,8 +833,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                                               _dragGlobalPosition,
                                                           draggingPieceIdx:
                                                               _draggingPieceIdx,
-                                                          highlightedIndex:
-                                                              _highlightedSlotIdx,
                                                         ),
                                                       ),
                                                     ],
@@ -906,82 +864,64 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                             Container(
                               width: 180,
                               color: Colors.grey.withOpacity(0.04),
-                              child: DragTarget<int>(
-                                onWillAccept: (data) {
-                                  // Accept if the piece is currently on the board
-                                  return data != null && boardState.contains(data);
-                                },
-                                onAccept: (data) {
-                                  setState(() {
-                                    final boardIdx = boardState.indexOf(data);
-                                    if (boardIdx != -1) {
-                                      boardState[boardIdx] = null;
-                                      if (!pieceOrder.contains(data)) {
-                                        pieceOrder.add(data);
-                                      }
-                                    }
-                                  });
-                                },
-                                builder: (context, candidateData, rejectedData) {
-                                  return Column(
-                                    children: [
-                                      const SizedBox(height: 16),
-                                      Expanded(
-                                        child: ListView.separated(
-                                          scrollDirection: Axis.vertical,
-                                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                                          itemBuilder: (context, index) {
-                                            final pieceIdx = pieceOrder[index];
-                                            return Draggable<int>(
-                                              data: pieceIdx,
-                                              feedback: Material(
-                                                color: Colors.transparent,
-                                                child: Transform.translate(
-                                                  offset: Offset(0, 0),
-                                                  child: SizedBox(
-                                                    width: 88,
-                                                    height: 88,
-                                                    child: PuzzlePiece(
-                                                      imageProvider: _imageProvider,
-                                                      rows: rows,
-                                                      cols: cols,
-                                                      row: pieceIdx ~/ cols,
-                                                      col: pieceIdx % cols,
-                                                    ),
-                                                  ),
+                              child: Column(
+                                children: [
+                                  const SizedBox(height: 16),
+                                  Expanded(
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.vertical,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12),
+                                      itemBuilder: (context, index) {
+                                        final pieceIdx = pieceOrder[index];
+                                        return Draggable<int>(
+                                          data: pieceIdx,
+                                          feedback: Material(
+                                            color: Colors.transparent,
+                                            child: Transform.translate(
+                                              // Offset so the top left of the piece is at the finger, not the center
+                                              offset: Offset(0, 0),
+                                              child: SizedBox(
+                                                width: 88,
+                                                height: 88,
+                                                child: _PuzzlePiece(
+                                                  imageProvider: _imageProvider,
+                                                  rows: rows,
+                                                  cols: cols,
+                                                  row: pieceIdx ~/ cols,
+                                                  col: pieceIdx % cols,
                                                 ),
                                               ),
-                                              childWhenDragging: Opacity(
-                                                opacity: 0.25,
-                                                child: _trayPieceWidget(_imageProvider, pieceIdx),
-                                              ),
-                                              onDragStarted: () => setState(() {
-                                                draggingIndex = pieceIdx;
-                                                _draggingPieceIdx = pieceIdx;
-                                              }),
-                                              onDraggableCanceled: (_, __) => setState(() {
-                                                draggingIndex = null;
-                                                _draggingPieceIdx = null;
-                                              }),
-                                              onDragEnd: (_) {
-                                                if (_highlightedSlotIdx != null) {
-                                                  _onPieceDroppedToBoard(_highlightedSlotIdx!, pieceIdx);
-                                                }
-                                                setState(() {
-                                                  draggingIndex = null;
-                                                  _draggingPieceIdx = null;
-                                                });
-                                              },
-                                              child: _trayPieceWidget(_imageProvider, pieceIdx),
-                                            );
-                                          },
-                                          separatorBuilder: (_, __) => const SizedBox(height: 12),
-                                          itemCount: pieceOrder.length,
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
+                                            ),
+                                          ),
+                                          childWhenDragging: Opacity(
+                                            opacity: 0.25,
+                                            child: _trayPieceWidget(
+                                                _imageProvider, pieceIdx),
+                                          ),
+                                          onDragStarted: () => setState(() {
+                                            draggingIndex = pieceIdx;
+                                            _draggingPieceIdx = pieceIdx;
+                                          }),
+                                          onDraggableCanceled: (_, __) =>
+                                              setState(() {
+                                            draggingIndex = null;
+                                            _draggingPieceIdx = null;
+                                          }),
+                                          onDragEnd: (_) => setState(() {
+                                            draggingIndex = null;
+                                            _draggingPieceIdx = null;
+                                          }),
+                                          child: _trayPieceWidget(
+                                              _imageProvider, pieceIdx),
+                                        );
+                                      },
+                                      separatorBuilder: (_, __) =>
+                                          const SizedBox(height: 12),
+                                      itemCount: pieceOrder.length,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -1007,8 +947,8 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     // Make each tray slot a DragTarget so it can accept pieces from the board
     return DragTarget<int>(
       onWillAccept: (data) {
-        // Accept if the piece is currently on the board
-        return data != null && boardState.contains(data);
+        // Accept if the piece is not already in the tray
+        return data != null && !pieceOrder.contains(data);
       },
       onAccept: (data) {
         setState(() {
@@ -1042,7 +982,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
             child: valid
                 ? RepaintBoundary(
                     key: ValueKey('tray_rb_${pieceIdx}_${rows}_${cols}'),
-                    child: PuzzlePiece(
+                    child: _PuzzlePiece(
                       key: ValueKey('tray_${pieceIdx}_${rows}_${cols}'),
                       imageProvider: provider,
                       rows: rows,
@@ -1059,12 +999,269 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   }
 }
 
-// ...existing code...
+class _PuzzleBoardWithTray extends StatelessWidget {
+  final ImageProvider imageProvider;
+  final int rows;
+  final int cols;
+  final List<int?> boardState;
+  final List<int>? trayPieces; // indices remaining in tray
+  final int? draggingIndex;
+  final void Function(int boardIdx, int pieceIdx)? onPieceDropped;
+  final void Function(int boardIdx)? onPieceRemoved;
+  final void Function(int pieceIdx)? onStartDraggingFromTray;
+  final VoidCallback? onEndDragging;
 
-// ...existing code...
+  final Map<int, GlobalKey>? slotKeys;
+  final Offset? dragGlobalPosition;
+  final int? draggingPieceIdx;
+
+  const _PuzzleBoardWithTray({
+    Key? key,
+    required this.imageProvider,
+    required this.rows,
+    required this.cols,
+    required this.boardState,
+    this.trayPieces,
+    this.draggingIndex,
+    this.onPieceDropped,
+    this.onPieceRemoved,
+    this.onStartDraggingFromTray,
+    this.onEndDragging,
+    this.slotKeys,
+    this.dragGlobalPosition,
+    this.draggingPieceIdx,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // build a grid of stack positioned DragTargets and placed Draggables
+    return LayoutBuilder(builder: (context, constraints) {
+      final double tileWidth = constraints.maxWidth / cols;
+      final double tileHeight = constraints.maxHeight / rows;
+
+      final children = <Widget>[];
+
+      for (int index = 0; index < rows * cols; index++) {
+        final int row = index ~/ cols;
+        final int col = index % cols;
+        final int? pieceIdx = boardState[index];
+        final key = slotKeys != null ? slotKeys![index] : null;
+
+        children.add(Positioned(
+          left: col * tileWidth,
+          top: row * tileHeight,
+          width: tileWidth,
+          height: tileHeight,
+          child: DragTarget<int>(
+            onWillAccept: (data) => pieceIdx == null, // accept only when empty
+            onAccept: (data) {
+              if (onPieceDropped != null) onPieceDropped!(index, data);
+            },
+            builder: (context, candidateData, rejectedData) {
+              if (pieceIdx != null) {
+                // placed piece: make it draggable so it can be moved to other slots or removed
+                return Draggable<int>(
+                  data: pieceIdx,
+                  feedback: Material(
+                    color: Colors.transparent,
+                    child: Transform.translate(
+                      // Center the piece under the finger
+                      offset: Offset(-tileWidth / 2, -tileHeight / 2),
+                      child: SizedBox(
+                        width: tileWidth,
+                        height: tileHeight,
+                        child: _PuzzlePiece(
+                          imageProvider: imageProvider,
+                          rows: rows,
+                          cols: cols,
+                          row: pieceIdx ~/ cols,
+                          col: pieceIdx % cols,
+                        ),
+                      ),
+                    ),
+                  ),
+                  childWhenDragging: Container(
+                    width: tileWidth,
+                    height: tileHeight,
+                    // No border, transparent background
+                  ),
+                  onDragEnd: (details) {
+                    if (onEndDragging != null) onEndDragging!();
+                  },
+                  child: GestureDetector(
+                    onDoubleTap: () {
+                      if (onPieceRemoved != null) onPieceRemoved!(index);
+                    },
+                    child: SizedBox(
+                      width: tileWidth,
+                      height: tileHeight,
+                      child: RepaintBoundary(
+                        key: ValueKey('board_rb_${index}_${rows}_${cols}'),
+                        child: _PuzzlePiece(
+                          key: ValueKey('board_${index}_${rows}_${cols}'),
+                          imageProvider: imageProvider,
+                          rows: rows,
+                          cols: cols,
+                          row: pieceIdx ~/ cols,
+                          col: pieceIdx % cols,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              } else {
+                // empty slot: show highlight only if the dragged piece visually overlaps the slot
+                bool isHighlighted = false;
+                if (dragGlobalPosition != null &&
+                    draggingPieceIdx != null &&
+                    draggingPieceIdx == index &&
+                    key != null) {
+                  final renderBox =
+                      key.currentContext?.findRenderObject() as RenderBox?;
+                  if (renderBox != null) {
+                    final slotRect =
+                        renderBox.localToGlobal(Offset.zero) & renderBox.size;
+                    // Assume drag feedback is about 88x88 (same as tray piece)
+                    final dragRect = Rect.fromCenter(
+                        center: dragGlobalPosition!, width: 88, height: 88);
+                    if (slotRect.overlaps(dragRect)) {
+                      isHighlighted = true;
+                    }
+                  }
+                }
+                return Container(
+                  key: key,
+                  width: tileWidth,
+                  height: tileHeight,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    decoration: BoxDecoration(
+                      border: isHighlighted
+                          ? Border.all(color: Colors.deepOrange, width: 4)
+                          : null,
+                      borderRadius: BorderRadius.circular(8),
+                      color: isHighlighted
+                          ? Colors.orange.withOpacity(0.18)
+                          : Colors.transparent,
+                      boxShadow: isHighlighted
+                          ? [
+                              BoxShadow(
+                                color: Colors.orange.withOpacity(0.18),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                                offset: Offset(0, 4),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: isHighlighted
+                        ? Center(
+                            child: Opacity(
+                                opacity: 0.7,
+                                child: Icon(Icons.open_in_new,
+                                    size: 32, color: Colors.deepOrange)))
+                        : null,
+                  ),
+                );
+              }
+            },
+          ),
+        ));
+      }
+
+      return Stack(children: children);
+    });
+  }
+}
+
+class _PuzzlePiece extends StatelessWidget {
+  final ImageProvider imageProvider;
+  final int rows;
+  final int cols;
+  final int row;
+  final int col;
+
+  const _PuzzlePiece({
+    Key? key,
+    required this.imageProvider,
+    required this.rows,
+    required this.cols,
+    required this.row,
+    required this.col,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<ImageInfo>(
+      future: _getImageInfo(imageProvider),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        final imageInfo = snapshot.data!;
+        final image = imageInfo.image;
+
+        return CustomPaint(
+          size: Size.infinite,
+          painter: _PuzzlePainter(
+            image: image,
+            rows: rows,
+            cols: cols,
+            row: row,
+            col: col,
+          ),
+        );
+      },
+    );
+  }
+
+  Future<ImageInfo> _getImageInfo(ImageProvider provider) async {
+    final completer = Completer<ImageInfo>();
+    final stream = provider.resolve(const ImageConfiguration());
+    final listener = ImageStreamListener((info, _) {
+      completer.complete(info);
+    });
+    stream.addListener(listener);
+    return completer.future;
+  }
+}
 
 // Top-level painter for puzzle piece cropping
-// ...existing code...
+class _PuzzlePainter extends CustomPainter {
+  final ui.Image image;
+  final int rows;
+  final int cols;
+  final int row;
+  final int col;
+
+  _PuzzlePainter({
+    required this.image,
+    required this.rows,
+    required this.cols,
+    required this.row,
+    required this.col,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final pieceWidth = image.width / cols;
+    final pieceHeight = image.height / rows;
+
+    final src = Rect.fromLTWH(
+      col * pieceWidth,
+      row * pieceHeight,
+      pieceWidth,
+      pieceHeight,
+    );
+
+    final dst = Rect.fromLTWH(0, 0, size.width, size.height);
+
+    canvas.drawImageRect(image, src, dst, Paint());
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
 // --------------------------
 // Rest of the screens & helpers (top-level)
 // --------------------------
@@ -1076,7 +1273,85 @@ class _PuzzleTheme {
   const _PuzzleTheme(this.name, this.icon, this.color);
 }
 
-// ...existing code...
-// AnimatedBubbles and helpers moved to widgets/animated_bubbles.dart
+class AnimatedBubbles extends StatefulWidget {
+  const AnimatedBubbles({super.key});
+
+  @override
+  State<AnimatedBubbles> createState() => _AnimatedBubblesState();
+}
+
+class _AnimatedBubblesState extends State<AnimatedBubbles>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<_Bubble> _bubbles = List.generate(18, (i) => _Bubble.random());
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        AnimationController(vsync: this, duration: const Duration(seconds: 18))
+          ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: _BubblesPainter(_bubbles, _controller.value),
+        );
+      },
+    );
+  }
+}
+
+class _Bubble {
+  final double x, radius, speed, phase;
+  final Color color;
+  _Bubble(this.x, this.radius, this.speed, this.phase, this.color);
+  static _Bubble random() {
+    final colors = [
+      Colors.orange,
+      Colors.blue,
+      Colors.purple,
+      Colors.green,
+      Colors.pink,
+      Colors.yellow
+    ];
+    final rnd = math.Random();
+    return _Bubble(
+      rnd.nextDouble(),
+      10 + rnd.nextDouble() * 18,
+      0.08 + rnd.nextDouble() * 0.12,
+      rnd.nextDouble(),
+      colors[rnd.nextInt(colors.length)],
+    );
+  }
+}
+
+class _BubblesPainter extends CustomPainter {
+  final List<_Bubble> bubbles;
+  final double t;
+  _BubblesPainter(this.bubbles, this.t);
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final b in bubbles) {
+      final y = size.height * ((b.speed * t + b.phase) % 1.0);
+      final x = size.width * b.x;
+      final paint = Paint()..color = b.color.withOpacity(0.18);
+      canvas.drawCircle(Offset(x, y), b.radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BubblesPainter oldDelegate) => true;
+}
 
 /* Puzzle selection screens (Type -> Level -> Play) */

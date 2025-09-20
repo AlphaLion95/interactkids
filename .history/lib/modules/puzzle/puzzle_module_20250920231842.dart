@@ -525,35 +525,35 @@ class PuzzleScreen extends StatefulWidget {
 class _PuzzleScreenState extends State<PuzzleScreen> {
   // Helper to update highlight index based on pointer position
   void _updateHighlightSlot(Offset globalPosition) {
-    // Find the board area RenderBox
-    final boardBox = context.findRenderObject() as RenderBox?;
+    final RenderBox? boardBox = _slotKeys.isNotEmpty ? _slotKeys[0]?.currentContext?.findRenderObject() as RenderBox? : null;
     if (boardBox == null) return;
-    // Find the board widget's position and size
-    final boardStack = boardBox.size;
-    // Find the board area (centered in parent)
-    final boardWidth = 500.0; // match maxWidth constraint
-    final boardHeight = 500.0; // match maxHeight constraint
-    final parentSize = boardStack;
-    final boardLeft = (parentSize.width - boardWidth) / 2 + 16; // 16 padding
-    final boardTop = (parentSize.height - boardHeight) / 2 + 16;
-    final tileWidth = boardWidth / cols;
-    final tileHeight = boardHeight / rows;
-    // Convert global pointer to board-local
-    final local = Offset(globalPosition.dx - boardLeft, globalPosition.dy - boardTop);
-    int? foundIdx;
+    final boardLocal = boardBox.globalToLocal(globalPosition);
+    final double tileWidth = boardBox.size.width;
+    final double tileHeight = boardBox.size.height;
+    // Find which slot (if any) the pointer overlaps
     for (int idx = 0; idx < rows * cols; idx++) {
       if (boardState[idx] != null) continue;
       final row = idx ~/ cols;
       final col = idx % cols;
-      final rect = Rect.fromLTWH(col * tileWidth, row * tileHeight, tileWidth, tileHeight).inflate(6);
-      if (rect.contains(local)) {
-        foundIdx = idx;
-        break;
+      final slotKey = _slotKeys[idx];
+      if (slotKey == null) continue;
+      final context = slotKey.currentContext;
+      if (context == null) continue;
+      final RenderBox slotBox = context.findRenderObject() as RenderBox;
+      final slotOffset = slotBox.localToGlobal(Offset.zero);
+      final slotRect = Rect.fromLTWH(slotOffset.dx, slotOffset.dy, slotBox.size.width, slotBox.size.height).inflate(6);
+      if (slotRect.contains(globalPosition)) {
+        if (_highlightedSlotIdx != idx) {
+          setState(() {
+            _highlightedSlotIdx = idx;
+          });
+        }
+        return;
       }
     }
-    if (_highlightedSlotIdx != foundIdx) {
+    if (_highlightedSlotIdx != null) {
       setState(() {
-        _highlightedSlotIdx = foundIdx;
+        _highlightedSlotIdx = null;
       });
     }
   }
@@ -906,82 +906,71 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                             Container(
                               width: 180,
                               color: Colors.grey.withOpacity(0.04),
-                              child: DragTarget<int>(
-                                onWillAccept: (data) {
-                                  // Accept if the piece is currently on the board
-                                  return data != null && boardState.contains(data);
-                                },
-                                onAccept: (data) {
-                                  setState(() {
-                                    final boardIdx = boardState.indexOf(data);
-                                    if (boardIdx != -1) {
-                                      boardState[boardIdx] = null;
-                                      if (!pieceOrder.contains(data)) {
-                                        pieceOrder.add(data);
-                                      }
-                                    }
-                                  });
-                                },
-                                builder: (context, candidateData, rejectedData) {
-                                  return Column(
-                                    children: [
-                                      const SizedBox(height: 16),
-                                      Expanded(
-                                        child: ListView.separated(
-                                          scrollDirection: Axis.vertical,
-                                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                                          itemBuilder: (context, index) {
-                                            final pieceIdx = pieceOrder[index];
-                                            return Draggable<int>(
-                                              data: pieceIdx,
-                                              feedback: Material(
-                                                color: Colors.transparent,
-                                                child: Transform.translate(
-                                                  offset: Offset(0, 0),
-                                                  child: SizedBox(
-                                                    width: 88,
-                                                    height: 88,
-                                                    child: PuzzlePiece(
-                                                      imageProvider: _imageProvider,
-                                                      rows: rows,
-                                                      cols: cols,
-                                                      row: pieceIdx ~/ cols,
-                                                      col: pieceIdx % cols,
-                                                    ),
-                                                  ),
+                              child: Column(
+                                children: [
+                                  const SizedBox(height: 16),
+                                  Expanded(
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.vertical,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12),
+                                      itemBuilder: (context, index) {
+                                        final pieceIdx = pieceOrder[index];
+                                        return Draggable<int>(
+                                          data: pieceIdx,
+                                          feedback: Material(
+                                            color: Colors.transparent,
+                                            child: Transform.translate(
+                                              offset: Offset(0, 0),
+                                              child: SizedBox(
+                                                width: 88,
+                                                height: 88,
+                                                child: PuzzlePiece(
+                                                  imageProvider: _imageProvider,
+                                                  rows: rows,
+                                                  cols: cols,
+                                                  row: pieceIdx ~/ cols,
+                                                  col: pieceIdx % cols,
                                                 ),
                                               ),
-                                              childWhenDragging: Opacity(
-                                                opacity: 0.25,
-                                                child: _trayPieceWidget(_imageProvider, pieceIdx),
-                                              ),
-                                              onDragStarted: () => setState(() {
-                                                draggingIndex = pieceIdx;
-                                                _draggingPieceIdx = pieceIdx;
-                                              }),
-                                              onDraggableCanceled: (_, __) => setState(() {
-                                                draggingIndex = null;
-                                                _draggingPieceIdx = null;
-                                              }),
-                                              onDragEnd: (_) {
-                                                if (_highlightedSlotIdx != null) {
-                                                  _onPieceDroppedToBoard(_highlightedSlotIdx!, pieceIdx);
-                                                }
-                                                setState(() {
-                                                  draggingIndex = null;
-                                                  _draggingPieceIdx = null;
-                                                });
-                                              },
-                                              child: _trayPieceWidget(_imageProvider, pieceIdx),
-                                            );
+                                            ),
+                                          ),
+                                          childWhenDragging: Opacity(
+                                            opacity: 0.25,
+                                            child: _trayPieceWidget(
+                                                _imageProvider, pieceIdx),
+                                          ),
+                                          onDragStarted: () => setState(() {
+                                            draggingIndex = pieceIdx;
+                                            _draggingPieceIdx = pieceIdx;
+                                          }),
+                                          onDraggableCanceled: (_, __) =>
+                                              setState(() {
+                                            draggingIndex = null;
+                                            _draggingPieceIdx = null;
+                                          }),
+                                          onDragEnd: (_) {
+                                            // If a slot is highlighted, drop the piece there
+                                            if (_highlightedSlotIdx != null) {
+                                              _onPieceDroppedToBoard(
+                                                  _highlightedSlotIdx!,
+                                                  pieceIdx);
+                                            }
+                                            setState(() {
+                                              draggingIndex = null;
+                                              _draggingPieceIdx = null;
+                                            });
                                           },
-                                          separatorBuilder: (_, __) => const SizedBox(height: 12),
-                                          itemCount: pieceOrder.length,
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
+                                          child: _trayPieceWidget(
+                                              _imageProvider, pieceIdx),
+                                        );
+                                      },
+                                      separatorBuilder: (_, __) =>
+                                          const SizedBox(height: 12),
+                                      itemCount: pieceOrder.length,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -1007,8 +996,8 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     // Make each tray slot a DragTarget so it can accept pieces from the board
     return DragTarget<int>(
       onWillAccept: (data) {
-        // Accept if the piece is currently on the board
-        return data != null && boardState.contains(data);
+        // Accept if the piece is not already in the tray
+        return data != null && !pieceOrder.contains(data);
       },
       onAccept: (data) {
         setState(() {
