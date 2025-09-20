@@ -693,7 +693,11 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                   childWhenDragging: Container(
                     width: tileWidth,
                     height: tileHeight,
-                    // No border, transparent background
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.orange, width: 2),
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white.withOpacity(0.06),
+                    ),
                   ),
                   onDragEnd: (details) {
                     if (onEndDragging != null) onEndDragging!();
@@ -702,9 +706,14 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                     onDoubleTap: () {
                       if (onPieceRemoved != null) onPieceRemoved!(index);
                     },
-                    child: SizedBox(
+                    child: Container(
                       width: tileWidth,
                       height: tileHeight,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.orange, width: 2),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withOpacity(0.12),
+                      ),
                       child: _PuzzlePiece(
                         imageProvider: imageProvider,
                         rows: rows,
@@ -716,20 +725,21 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                   ),
                 );
               } else {
-                // empty slot: show only highlight if dragging over
+                // empty slot: show placeholder, highlight if dragging over
                 final bool isHighlighted = candidateData.isNotEmpty;
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 120),
                   width: tileWidth,
                   height: tileHeight,
                   decoration: BoxDecoration(
-                    border: isHighlighted
-                        ? Border.all(color: Colors.deepOrange, width: 4)
-                        : null,
+                    border: Border.all(
+                      color: isHighlighted ? Colors.deepOrange : Colors.orange,
+                      width: isHighlighted ? 4 : 2,
+                    ),
                     borderRadius: BorderRadius.circular(8),
                     color: isHighlighted
                         ? Colors.orange.withOpacity(0.18)
-                        : Colors.transparent,
+                        : Colors.white.withOpacity(0.02),
                     boxShadow: isHighlighted
                         ? [
                             BoxShadow(

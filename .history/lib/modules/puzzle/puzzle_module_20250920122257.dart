@@ -216,7 +216,7 @@ class _PuzzleImageTile extends StatelessWidget {
                 color: Colors.orange.withOpacity(0.18),
                 blurRadius: 12,
                 spreadRadius: 2,
-                offset: const Offset(0, 4)),
+                offset: Offset(0, 4)),
           ],
         ),
         child: Stack(
@@ -274,8 +274,14 @@ class _PuzzleImageTile extends StatelessWidget {
     );
   }
 }
+// --- PUZZLE MODULE: GAMIFIED UI RESTORE ---
 
-// --- PUZZLE MODULE: GAMEPLAY SCREEN ---
+/// Full puzzle module with fixes:
+/// - initializes missing fields
+/// - supports asset and file images
+/// - drag & drop between tray and board
+/// - reset, win detection, and win dialog
+/// - pass rows/cols from level screen
 
 class PuzzleScreen extends StatefulWidget {
   final String? imagePath;
@@ -292,7 +298,8 @@ class PuzzleScreen extends StatefulWidget {
   State<PuzzleScreen> createState() => _PuzzleScreenState();
 }
 
-class _PuzzleScreenState extends State<PuzzleScreen> {
+class _PuzzleScreenState extends State<PuzzleScreen> {}
+
   double? _imageAspectRatio;
   late ImageProvider _imageProvider;
   late int rows;
@@ -404,22 +411,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
       }
       if (correct) {
         hasWon = true;
-        // Simple win dialog
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('You Win!'),
-            content: const Text('Great job — puzzle complete.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+        // TODO: Show win dialog/celebration
       }
     }
   }
@@ -442,9 +434,11 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isLandscape = constraints.maxWidth > constraints.maxHeight;
+            // final double trayHeight = 120; // unused
             return isLandscape
                 ? Row(
                     children: [
+                      // Puzzle board area (left, takes most space)
                       Expanded(
                         flex: 3,
                         child: Center(
@@ -485,8 +479,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                                 onPieceRemoved:
                                                     _onPieceRemovedFromBoard,
                                                 trayPieces: pieceOrder,
-                                                onStartDraggingFromTray:
-                                                    (index) {
+                                                onStartDraggingFromTray: (index) {
                                                   setState(() {
                                                     draggingIndex = index;
                                                   });
@@ -506,6 +499,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                           ),
                         ),
                       ),
+                      // Tray area (right, vertical)
                       Container(
                         width: 180,
                         color: Colors.grey.withOpacity(0.04),
@@ -516,8 +510,8 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                               child: SizedBox.expand(
                                 child: ListView.separated(
                                   scrollDirection: Axis.vertical,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 12),
                                   itemBuilder: (context, index) {
                                     final pieceIdx = pieceOrder[index];
                                     return Draggable<int>(
@@ -616,7 +610,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
       ),
     );
   }
-}
 
 class _PuzzleBoardWithTray extends StatelessWidget {
   final ImageProvider imageProvider;
@@ -693,8 +686,15 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                   childWhenDragging: Container(
                     width: tileWidth,
                     height: tileHeight,
-                    // No border, transparent background
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.orange, width: 2),
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white.withOpacity(0.06),
+                    ),
                   ),
+                  onDragStarted: () {
+                    // nothing special here
+                  },
                   onDragEnd: (details) {
                     if (onEndDragging != null) onEndDragging!();
                   },
@@ -702,9 +702,14 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                     onDoubleTap: () {
                       if (onPieceRemoved != null) onPieceRemoved!(index);
                     },
-                    child: SizedBox(
+                    child: Container(
                       width: tileWidth,
                       height: tileHeight,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.orange, width: 2),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withOpacity(0.12),
+                      ),
                       child: _PuzzlePiece(
                         imageProvider: imageProvider,
                         rows: rows,
@@ -716,37 +721,21 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                   ),
                 );
               } else {
-                // empty slot: show only highlight if dragging over
-                final bool isHighlighted = candidateData.isNotEmpty;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
+                // empty slot: show placeholder
+                return Container(
                   width: tileWidth,
                   height: tileHeight,
                   decoration: BoxDecoration(
-                    border: isHighlighted
-                        ? Border.all(color: Colors.deepOrange, width: 4)
-                        : null,
+                    border: Border.all(color: Colors.orange, width: 2),
                     borderRadius: BorderRadius.circular(8),
-                    color: isHighlighted
-                        ? Colors.orange.withOpacity(0.18)
-                        : Colors.transparent,
-                    boxShadow: isHighlighted
-                        ? [
-                            BoxShadow(
-                              color: Colors.orange.withOpacity(0.18),
-                              blurRadius: 12,
-                              spreadRadius: 2,
-                              offset: Offset(0, 4),
-                            ),
-                          ]
-                        : [],
+                    color: Colors.white.withOpacity(0.02),
                   ),
-                  child: isHighlighted
+                  child: candidateData.isNotEmpty
                       ? Center(
                           child: Opacity(
-                              opacity: 0.7,
+                              opacity: 0.6,
                               child: Icon(Icons.open_in_new,
-                                  size: 32, color: Colors.deepOrange)))
+                                  size: 28, color: Colors.orange)))
                       : null,
                 );
               }
@@ -779,30 +768,31 @@ class _PuzzlePiece extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double pieceWidth = constraints.maxWidth;
-        final double pieceHeight = constraints.maxHeight;
-        return ClipRect(
-          child: Stack(
-            children: [
-              Positioned(
-                left: -col * pieceWidth,
-                top: -row * pieceHeight,
-                width: pieceWidth * cols,
-                height: pieceHeight * rows,
-                child: Image(
-                  image: imageProvider,
-                  fit: BoxFit.cover,
-                  width: pieceWidth * cols,
-                  height: pieceHeight * rows,
-                ),
+        final double tileWidth = constraints.maxWidth;
+        final double tileHeight = constraints.maxHeight;
+        // Board: render full image, shift to show only tile area
+        return Stack(
+          children: [
+            Positioned(
+              left: -col * tileWidth,
+              top: -row * tileHeight,
+              child: Image(
+                image: imageProvider,
+                fit: BoxFit.cover,
+                width: tileWidth * cols,
+                height: tileHeight * rows,
               ),
-            ],
-          ),
+            ),
+            ClipRect(
+              child: SizedBox(width: tileWidth, height: tileHeight),
+            ),
+          ],
         );
       },
     );
   }
 }
+
 // --------------------------
 // Rest of the screens & helpers (top-level)
 // --------------------------
@@ -866,13 +856,12 @@ class _Bubble {
       Colors.pink,
       Colors.yellow
     ];
-    final rnd = math.Random();
     return _Bubble(
-      rnd.nextDouble(),
-      10 + rnd.nextDouble() * 18,
-      0.08 + rnd.nextDouble() * 0.12,
-      rnd.nextDouble(),
-      colors[rnd.nextInt(colors.length)],
+      math.Random().nextDouble(),
+      10 + math.Random().nextDouble() * 18,
+      0.08 + math.Random().nextDouble() * 0.12,
+      math.Random().nextDouble(),
+      colors[math.Random().nextInt(colors.length)],
     );
   }
 }
@@ -892,7 +881,9 @@ class _BubblesPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _BubblesPainter oldDelegate) => true;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
+
 /* Puzzle selection screens (Type -> Level -> Play) */
+

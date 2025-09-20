@@ -693,7 +693,11 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                   childWhenDragging: Container(
                     width: tileWidth,
                     height: tileHeight,
-                    // No border, transparent background
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.orange, width: 2),
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white.withOpacity(0.06),
+                    ),
                   ),
                   onDragEnd: (details) {
                     if (onEndDragging != null) onEndDragging!();
@@ -702,9 +706,14 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                     onDoubleTap: () {
                       if (onPieceRemoved != null) onPieceRemoved!(index);
                     },
-                    child: SizedBox(
+                    child: Container(
                       width: tileWidth,
                       height: tileHeight,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.orange, width: 2),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white.withOpacity(0.12),
+                      ),
                       child: _PuzzlePiece(
                         imageProvider: imageProvider,
                         rows: rows,
@@ -716,37 +725,21 @@ class _PuzzleBoardWithTray extends StatelessWidget {
                   ),
                 );
               } else {
-                // empty slot: show only highlight if dragging over
-                final bool isHighlighted = candidateData.isNotEmpty;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
+                // empty slot: show placeholder
+                return Container(
                   width: tileWidth,
                   height: tileHeight,
                   decoration: BoxDecoration(
-                    border: isHighlighted
-                        ? Border.all(color: Colors.deepOrange, width: 4)
-                        : null,
+                    border: Border.all(color: Colors.orange, width: 2),
                     borderRadius: BorderRadius.circular(8),
-                    color: isHighlighted
-                        ? Colors.orange.withOpacity(0.18)
-                        : Colors.transparent,
-                    boxShadow: isHighlighted
-                        ? [
-                            BoxShadow(
-                              color: Colors.orange.withOpacity(0.18),
-                              blurRadius: 12,
-                              spreadRadius: 2,
-                              offset: Offset(0, 4),
-                            ),
-                          ]
-                        : [],
+                    color: Colors.white.withOpacity(0.02),
                   ),
-                  child: isHighlighted
+                  child: candidateData.isNotEmpty
                       ? Center(
                           child: Opacity(
-                              opacity: 0.7,
+                              opacity: 0.6,
                               child: Icon(Icons.open_in_new,
-                                  size: 32, color: Colors.deepOrange)))
+                                  size: 28, color: Colors.orange)))
                       : null,
                 );
               }
@@ -767,42 +760,46 @@ class _PuzzlePiece extends StatelessWidget {
   final int row;
   final int col;
   const _PuzzlePiece({
-    Key? key,
-    required this.imageProvider,
-    required this.rows,
-    required this.cols,
-    required this.row,
-    required this.col,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double pieceWidth = constraints.maxWidth;
-        final double pieceHeight = constraints.maxHeight;
-        return ClipRect(
-          child: Stack(
-            children: [
-              Positioned(
-                left: -col * pieceWidth,
-                top: -row * pieceHeight,
-                width: pieceWidth * cols,
-                height: pieceHeight * rows,
-                child: Image(
-                  image: imageProvider,
-                  fit: BoxFit.cover,
-                  width: pieceWidth * cols,
-                  height: pieceHeight * rows,
+    @override
+    Widget build(BuildContext context) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          // Each piece is a fraction of the whole image
+          return FractionallySizedBox(
+            widthFactor: 1.0,
+            heightFactor: 1.0,
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: constraints.maxWidth * cols,
+                height: constraints.maxHeight * rows,
+                child: Align(
+                  alignment: Alignment(
+                    -1.0 + 2.0 * col / (cols - 1),
+                    -1.0 + 2.0 * row / (rows - 1),
+                  ),
+                  widthFactor: 1 / cols,
+                  heightFactor: 1 / rows,
+                  child: Image(
+                    image: imageProvider,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            ],
+            ),
+          );
+        },
+      );
+    }
+              ),
+            ),
           ),
         );
       },
     );
   }
 }
+
 // --------------------------
 // Rest of the screens & helpers (top-level)
 // --------------------------
