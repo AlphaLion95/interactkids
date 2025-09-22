@@ -110,7 +110,7 @@ class _AnimatedMatchingTypeButtonState
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
     Future.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) _controller.forward();
+      if (mounted) _controller.repeat(reverse: true);
     });
   }
 
@@ -143,7 +143,7 @@ class _AnimatedMatchingTypeButtonState
           width: 320,
           height: 110,
           decoration: BoxDecoration(
-            color: widget.color,
+            color: widget.color.withOpacity(0.78), // Slightly transparent
             borderRadius: BorderRadius.circular(40),
             boxShadow: [
               BoxShadow(
@@ -250,16 +250,18 @@ class _Bubble {
   _Bubble(Random random) {
     x = random.nextDouble();
     y = random.nextDouble();
-    radius = 28 + random.nextDouble() * 32;
-    speed = 0.12 + random.nextDouble() * 0.18;
+    radius = 38 + random.nextDouble() * 48; // Larger bubbles
+    speed = 0.10 + random.nextDouble() * 0.16;
     phase = random.nextDouble() * 2 * pi;
     final colors = [
-      Colors.blue.shade100,
-      Colors.green.shade100,
-      Colors.orange.shade100,
-      Colors.purple.shade100,
-      Colors.pink.shade100,
-      Colors.cyan.shade100,
+      Colors.blueAccent,
+      Colors.greenAccent,
+      Colors.orangeAccent,
+      Colors.purpleAccent,
+      Colors.pinkAccent,
+      Colors.cyanAccent,
+      Colors.yellowAccent,
+      Colors.redAccent,
     ];
     color = colors[random.nextInt(colors.length)];
   }
@@ -272,12 +274,12 @@ class _BubblesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final b in bubbles) {
-      final dx = b.x * size.width + 24 * sin(t * 2 * pi * b.speed + b.phase);
+      final dx = b.x * size.width + 32 * sin(t * 2 * pi * b.speed + b.phase);
       final dy =
-          (b.y + 0.12 * sin(t * 2 * pi * b.speed + b.phase)) * size.height;
+          (b.y + 0.16 * sin(t * 2 * pi * b.speed + b.phase)) * size.height;
       final paint = Paint()
-        ..color = b.color.withOpacity(0.38)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+        ..color = b.color.withOpacity(0.88) // Even more visible
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1); // Minimal blur
       canvas.drawCircle(Offset(dx, dy), b.radius, paint);
     }
   }
