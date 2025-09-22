@@ -37,7 +37,8 @@ class MatchingScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F6FF),
       appBar: AppBar(
-        title: const Text('Select Matching Game Type', style: TextStyle(fontFamily: 'Nunito')),
+        title: const Text('Select Matching Game Type',
+            style: TextStyle(fontFamily: 'Nunito')),
         backgroundColor: Colors.blue.shade300,
         elevation: 0,
       ),
@@ -84,10 +85,13 @@ class _AnimatedMatchingTypeButton extends StatefulWidget {
     required this.delay,
   });
   @override
-  State<_AnimatedMatchingTypeButton> createState() => _AnimatedMatchingTypeButtonState();
+  State<_AnimatedMatchingTypeButton> createState() =>
+      _AnimatedMatchingTypeButtonState();
 }
 
-class _AnimatedMatchingTypeButtonState extends State<_AnimatedMatchingTypeButton> with SingleTickerProviderStateMixin {
+class _AnimatedMatchingTypeButtonState
+    extends State<_AnimatedMatchingTypeButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnim;
   late Animation<double> _floatAnim;
@@ -124,7 +128,11 @@ class _AnimatedMatchingTypeButtonState extends State<_AnimatedMatchingTypeButton
         return Transform.scale(
           scale: _scaleAnim.value,
           child: Transform.translate(
-            offset: Offset(0, -_floatAnim.value * sin(DateTime.now().millisecondsSinceEpoch / 600 + widget.delay)),
+            offset: Offset(
+                0,
+                -_floatAnim.value *
+                    sin(DateTime.now().millisecondsSinceEpoch / 600 +
+                        widget.delay)),
             child: child,
           ),
         );
@@ -196,10 +204,12 @@ class _AnimatedMatchingTypeButtonState extends State<_AnimatedMatchingTypeButton
 class _AnimatedMatchingBubbles extends StatefulWidget {
   const _AnimatedMatchingBubbles();
   @override
-  State<_AnimatedMatchingBubbles> createState() => _AnimatedMatchingBubblesState();
+  State<_AnimatedMatchingBubbles> createState() =>
+      _AnimatedMatchingBubblesState();
 }
 
-class _AnimatedMatchingBubblesState extends State<_AnimatedMatchingBubbles> with SingleTickerProviderStateMixin {
+class _AnimatedMatchingBubblesState extends State<_AnimatedMatchingBubbles>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final _random = Random();
   final _bubbleCount = 18;
@@ -263,13 +273,15 @@ class _BubblesPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     for (final b in bubbles) {
       final dx = b.x * size.width + 24 * sin(t * 2 * pi * b.speed + b.phase);
-      final dy = (b.y + 0.12 * sin(t * 2 * pi * b.speed + b.phase)) * size.height;
+      final dy =
+          (b.y + 0.12 * sin(t * 2 * pi * b.speed + b.phase)) * size.height;
       final paint = Paint()
         ..color = b.color.withOpacity(0.38)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
       canvas.drawCircle(Offset(dx, dy), b.radius, paint);
     }
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
@@ -288,7 +300,8 @@ class MatchingLettersScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F6FF),
       appBar: AppBar(
-        title: const Text('Match the Letters', style: TextStyle(fontFamily: 'Nunito')),
+        title: const Text('Match the Letters',
+            style: TextStyle(fontFamily: 'Nunito')),
         backgroundColor: Colors.blue.shade300,
         elevation: 0,
       ),

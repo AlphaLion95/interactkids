@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'matching_models.dart';
 
 /// Base widget for any matching game type.
@@ -19,12 +20,43 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
   dynamic selectedRight;
   bool completed = false;
 
+  static const _progressKey = 'matching_letters_progress';
+
   @override
   void initState() {
     super.initState();
-    leftItems = widget.mode.pairs.map((p) => p.left).toList()..shuffle();
-    rightItems = widget.mode.pairs.map((p) => p.right).toList()..shuffle();
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_progressKey);
+    final allPairs = widget.mode.pairs;
     matches = {};
+    leftItems = allPairs.map((p) => p.left).toList();
+    rightItems = allPairs.map((p) => p.right).toList();
+    leftItems.shuffle();
+    rightItems.shuffle();
+    if (saved != null) {
+      for (final entry in saved) {
+        final parts = entry.split('=');
+        if (parts.length == 2) {
+          final left = parts[0];
+          final right = parts[1];
+          matches[left] = right;
+          leftItems.remove(left);
+          rightItems.remove(right);
+        }
+      }
+    }
+    completed = leftItems.isEmpty && rightItems.isEmpty;
+    setState(() {});
+  }
+
+  Future<void> _saveProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final flat = matches.entries.map((e) => '${e.key}=${e.value}').toList();
+    await prefs.setStringList(_progressKey, flat);
   }
 
   void _onLeftTap(dynamic item) {
@@ -50,6 +82,7 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
       matches[selectedLeft] = selectedRight;
       leftItems.remove(selectedLeft);
       rightItems.remove(selectedRight);
+      _saveProgress();
       if (leftItems.isEmpty && rightItems.isEmpty) {
         completed = true;
       }
@@ -59,19 +92,38 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
     setState(() {});
   }
 
+  void _resetGame() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_progressKey);
+    setState(() {
+      leftItems = widget.mode.pairs.map((p) => p.left).toList();
+      rightItems = widget.mode.pairs.map((p) => p.right).toList();
+      leftItems.shuffle();
+      rightItems.shuffle();
+      matches.clear();
+      completed = false;
+      selectedLeft = null;
+      selectedRight = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: widget.title.isNotEmpty ? AppBar(title: Text(widget.title)) : null,
-      body: completed
-          ? Center(child: Text('Great job! All pairs matched!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)))
-          : Column(
-              children: [
-                const SizedBox(height: 12),
-                _MatchedTray(matches: matches, mode: widget.mode),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: Padding(
+      appBar:
+          widget.title.isNotEmpty ? AppBar(title: Text(widget.title)) : null,
+      body: Column(
+        children: [
+          const SizedBox(height: 12),
+          _MatchedTray(matches: matches, mode: widget.mode, onReset: _resetGame),
+          const SizedBox(height: 12),
+          Expanded(
+            child: completed
+                ? Center(
+                    child: Text('Great job! All pairs matched!',
+                        style: TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold)))
+                : Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -86,15 +138,19 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
                                   GestureDetector(
                                     onTap: () => _onLeftTap(item),
                                     child: Container(
-                                      margin: const EdgeInsets.symmetric(vertical: 8),
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 8),
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                          color: selectedLeft == item ? Colors.orange : Colors.transparent,
+                                          color: selectedLeft == item
+                                              ? Colors.orange
+                                              : Colors.transparent,
                                           width: 3,
                                         ),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: widget.mode.buildLeftItem(context, item),
+                                      child: widget.mode
+                                          .buildLeftItem(context, item),
                                     ),
                                   ),
                               ],
@@ -112,15 +168,19 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
                                   GestureDetector(
                                     onTap: () => _onRightTap(item),
                                     child: Container(
-                                      margin: const EdgeInsets.symmetric(vertical: 8),
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 8),
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                          color: selectedRight == item ? Colors.orange : Colors.transparent,
+                                          color: selectedRight == item
+                                              ? Colors.orange
+                                              : Colors.transparent,
                                           width: 3,
                                         ),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: widget.mode.buildRightItem(context, item),
+                                      child: widget.mode
+                                          .buildRightItem(context, item),
                                     ),
                                   ),
                               ],
@@ -130,9 +190,9 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -140,22 +200,10 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
 class _MatchedTray extends StatelessWidget {
   final Map<dynamic, dynamic> matches;
   final MatchingGameMode mode;
-  const _MatchedTray({required this.matches, required this.mode});
+  final VoidCallback? onReset;
+  const _MatchedTray({required this.matches, required this.mode, this.onReset});
   @override
   Widget build(BuildContext context) {
-    if (matches.isEmpty) {
-      return SizedBox(
-        height: 64,
-        child: Center(
-          child: Text('Matched Pairs will appear here!',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey.shade400,
-                fontFamily: 'Nunito',
-              )),
-        ),
-      );
-    }
     return Container(
       height: 74,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -172,19 +220,57 @@ class _MatchedTray extends StatelessWidget {
           ),
         ],
       ),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: matches.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 18),
-        itemBuilder: (context, i) {
-          final left = matches.keys.elementAt(i);
-          final right = matches[left];
-          return _MatchedPairDisplay(
-            left: left,
-            right: right,
-            mode: mode,
-          );
-        },
+      child: Row(
+        children: [
+          Expanded(
+            child: matches.isEmpty
+                ? Center(
+                    child: Text('Matched Pairs will appear here!',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey.shade400,
+                          fontFamily: 'Nunito',
+                        )),
+                  )
+                : ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: matches.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, i) {
+                      final left = matches.keys.elementAt(i);
+                      final right = matches[left];
+                      return _MatchedPairDisplay(
+                        left: left,
+                        right: right,
+                        mode: mode,
+                      );
+                    },
+                  ),
+          ),
+          if (onReset != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: GestureDetector(
+                onTap: onReset,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.18),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.refresh, color: Colors.blue, size: 22),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -194,7 +280,8 @@ class _MatchedPairDisplay extends StatelessWidget {
   final dynamic left;
   final dynamic right;
   final MatchingGameMode mode;
-  const _MatchedPairDisplay({required this.left, required this.right, required this.mode});
+  const _MatchedPairDisplay(
+      {required this.left, required this.right, required this.mode});
   @override
   Widget build(BuildContext context) {
     // For MatchingLettersMode, show compact Aa, Bb, etc.

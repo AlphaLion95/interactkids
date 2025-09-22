@@ -30,11 +30,14 @@ class MatchingLettersMode extends MatchingGameMode {
   Widget buildLeftItem(BuildContext context, dynamic item) {
     return _letterTile(item as String, isUpper: true);
   }
+
   @override
   Widget buildRightItem(BuildContext context, dynamic item) {
     return _letterTile(item as String, isUpper: false);
   }
-  Widget _letterTile(String letter, {required bool isUpper}) => AnimatedContainer(
+
+  Widget _letterTile(String letter, {required bool isUpper}) =>
+      AnimatedContainer(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -80,10 +83,12 @@ class MatchingPicturesMode extends MatchingGameMode {
   Widget buildLeftItem(BuildContext context, dynamic item) {
     return _imageTile(item as String);
   }
+
   @override
   Widget buildRightItem(BuildContext context, dynamic item) {
     return _imageTile(item as String);
   }
+
   Widget _imageTile(String assetPath) => Container(
         padding: const EdgeInsets.all(8),
         child: Image.asset(assetPath, width: 64, height: 64),
