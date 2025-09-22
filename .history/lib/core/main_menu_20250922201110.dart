@@ -11,7 +11,6 @@ import '../../modules/plants/plants_module.dart';
 import '../../modules/geography/geography_module.dart';
 import '../../modules/parts_of_house/parts_of_house_module.dart';
 import '../../modules/vocabulary/vocabulary_module.dart';
-import '../../widgets/animated_bubbles_background.dart';
 
 class MainMenu extends StatefulWidget {
   const MainMenu({super.key});

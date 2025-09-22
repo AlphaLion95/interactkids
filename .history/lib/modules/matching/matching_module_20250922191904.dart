@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:interactkids/widgets/animated_bubbles_background.dart';
 import 'matching_game_base.dart';
 import 'matching_models.dart';
 
@@ -45,8 +44,8 @@ class MatchingScreen extends StatelessWidget {
       ),
       body: Stack(
         children: [
-          // Unified animated bubbles background
-          const Positioned.fill(child: AnimatedBubblesBackground()),
+          // Animated floating bubbles background
+          const Positioned.fill(child: _AnimatedMatchingBubbles()),
           Center(
             child: SingleChildScrollView(
               child: Column(
@@ -111,7 +110,7 @@ class _AnimatedMatchingTypeButtonState
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
     Future.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) _controller.repeat(reverse: true);
+      if (mounted) _controller.forward();
     });
   }
 
@@ -144,7 +143,7 @@ class _AnimatedMatchingTypeButtonState
           width: 320,
           height: 110,
           decoration: BoxDecoration(
-            color: widget.color.withOpacity(0.78), // Slightly transparent
+            color: widget.color,
             borderRadius: BorderRadius.circular(40),
             boxShadow: [
               BoxShadow(
@@ -202,6 +201,93 @@ class _AnimatedMatchingTypeButtonState
   }
 }
 
+class _AnimatedMatchingBubbles extends StatefulWidget {
+  const _AnimatedMatchingBubbles();
+  @override
+  State<_AnimatedMatchingBubbles> createState() =>
+      _AnimatedMatchingBubblesState();
+}
+
+class _AnimatedMatchingBubblesState extends State<_AnimatedMatchingBubbles>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final _random = Random();
+  final _bubbleCount = 18;
+  late List<_Bubble> _bubbles;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    )..repeat();
+    _bubbles = List.generate(_bubbleCount, (i) => _Bubble(_random));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: _BubblesPainter(_bubbles, _controller.value),
+        );
+      },
+    );
+  }
+}
+
+class _Bubble {
+  late double x, y, radius, speed, phase;
+  late Color color;
+  _Bubble(Random random) {
+    x = random.nextDouble();
+    y = random.nextDouble();
+    radius = 38 + random.nextDouble() * 48; // Larger bubbles
+    speed = 0.10 + random.nextDouble() * 0.16;
+    phase = random.nextDouble() * 2 * pi;
+    final colors = [
+      Colors.blueAccent,
+      Colors.greenAccent,
+      Colors.orangeAccent,
+      Colors.purpleAccent,
+      Colors.pinkAccent,
+      Colors.cyanAccent,
+      Colors.yellowAccent,
+      Colors.redAccent,
+    ];
+    color = colors[random.nextInt(colors.length)];
+  }
+}
+
+class _BubblesPainter extends CustomPainter {
+  final List<_Bubble> bubbles;
+  final double t;
+  _BubblesPainter(this.bubbles, this.t);
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final b in bubbles) {
+      final dx = b.x * size.width + 32 * sin(t * 2 * pi * b.speed + b.phase);
+      final dy =
+          (b.y + 0.16 * sin(t * 2 * pi * b.speed + b.phase)) * size.height;
+      final paint = Paint()
+        ..color = b.color.withOpacity(0.88) // Even more visible
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1); // Minimal blur
+      canvas.drawCircle(Offset(dx, dy), b.radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
 class MatchingLettersScreen extends StatelessWidget {
   const MatchingLettersScreen({super.key});
 
@@ -223,7 +309,7 @@ class MatchingLettersScreen extends StatelessWidget {
       ),
       body: Stack(
         children: [
-          const Positioned.fill(child: AnimatedBubblesBackground()),
+          const Positioned.fill(child: _AnimatedMatchingBubbles()),
           MatchingGameBase(
             mode: MatchingLettersMode(pairs),
             title: '',

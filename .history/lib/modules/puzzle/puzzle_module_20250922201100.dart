@@ -852,8 +852,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                         : Stack(
                                             children: [
                                               const Positioned.fill(
-                                                  child:
-                                                      AnimatedBubblesBackground()),
+                                                  child: AnimatedBubblesBackground()),
                                               AspectRatio(
                                                 aspectRatio: _imageAspectRatio!,
                                                 child: ClipRRect(

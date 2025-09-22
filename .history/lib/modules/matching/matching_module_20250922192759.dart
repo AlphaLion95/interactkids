@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:interactkids/widgets/animated_bubbles_background.dart';
 import 'matching_game_base.dart';
 import 'matching_models.dart';
+import '../../widgets/animated_bubbles_background.dart';
 
 class MatchingScreen extends StatelessWidget {
   const MatchingScreen({super.key});
@@ -45,7 +45,6 @@ class MatchingScreen extends StatelessWidget {
       ),
       body: Stack(
         children: [
-          // Unified animated bubbles background
           const Positioned.fill(child: AnimatedBubblesBackground()),
           Center(
             child: SingleChildScrollView(
@@ -202,6 +201,7 @@ class _AnimatedMatchingTypeButtonState
   }
 }
 
+
 class MatchingLettersScreen extends StatelessWidget {
   const MatchingLettersScreen({super.key});
 
@@ -223,7 +223,7 @@ class MatchingLettersScreen extends StatelessWidget {
       ),
       body: Stack(
         children: [
-          const Positioned.fill(child: AnimatedBubblesBackground()),
+          const Positioned.fill(child: _AnimatedMatchingBubbles()),
           MatchingGameBase(
             mode: MatchingLettersMode(pairs),
             title: '',

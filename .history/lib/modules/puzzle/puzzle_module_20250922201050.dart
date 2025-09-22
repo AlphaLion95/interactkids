@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_piece.dart';
+import 'package:interactkids/modules/puzzle/widgets/animated_bubbles.dart';
 import 'package:interactkids/widgets/animated_bubbles_background.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_board_with_tray.dart';
 
@@ -852,8 +853,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                         : Stack(
                                             children: [
                                               const Positioned.fill(
-                                                  child:
-                                                      AnimatedBubblesBackground()),
+                                                  child: AnimatedBubblesBackground()),
                                               AspectRatio(
                                                 aspectRatio: _imageAspectRatio!,
                                                 child: ClipRRect(

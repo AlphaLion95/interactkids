@@ -115,8 +115,7 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
       body: Column(
         children: [
           const SizedBox(height: 12),
-          _MatchedTray(
-              matches: matches, mode: widget.mode, onReset: _resetGame),
+          _MatchedTray(matches: matches, mode: widget.mode, onReset: _resetGame),
           const SizedBox(height: 12),
           Expanded(
             child: completed
@@ -267,8 +266,7 @@ class _MatchedTray extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child:
-                      const Icon(Icons.refresh, color: Colors.blue, size: 22),
+                  child: const Icon(Icons.refresh, color: Colors.blue, size: 22),
                 ),
               ),
             ),

@@ -12,15 +12,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_piece.dart';
-import 'package:interactkids/widgets/animated_bubbles_background.dart';
+import 'package:interactkids/modules/puzzle/widgets/animated_bubbles.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_board_with_tray.dart';
 
 class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
     _PuzzleTheme('Sea', Icons.waves, Color(0xFF40c4ff)),
     _PuzzleTheme('Jungle', Icons.park, Color(0xFF66bb6a)),
-    _PuzzleTheme('Flying', Icons.flutter_dash,
-        Color(0xFFb39ddb)), // Changed to bird icon
+    _PuzzleTheme('Flying', Icons.flight, Color(0xFFb39ddb)),
   ];
   const PuzzleTypeScreen({super.key});
   @override
@@ -30,7 +29,7 @@ class PuzzleTypeScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF7F6FF),
       body: Stack(
         children: [
-          const Positioned.fill(child: AnimatedBubblesBackground()),
+          const Positioned.fill(child: AnimatedBubbles()),
           Column(
             children: [
               AppBar(
@@ -56,8 +55,7 @@ class PuzzleTypeScreen extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        PuzzleLevelScreen(type: type),
+                                    builder: (_) => PuzzleLevelScreen(type: type),
                                   ),
                                 );
                               },
@@ -68,6 +66,7 @@ class PuzzleTypeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+
             ],
           ),
         ],
@@ -266,7 +265,7 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const Positioned.fill(child: AnimatedBubblesBackground()),
+          const Positioned.fill(child: AnimatedBubbles()),
           Column(
             children: [
               AppBar(
@@ -305,22 +304,17 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
                         childAspectRatio: 1,
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
                         children: [
-                          ...defaultImages[level]!
-                              .map((img) => _PuzzleImageTile(
-                                    imagePath: img,
-                                    progress: progress[level]![img] ?? 0.0,
-                                    onTap: () => _onImageTap(level, img),
-                                    completed:
-                                        (progress[level]![img] ?? 0.0) >= 1.0,
-                                  )),
+                          ...defaultImages[level]!.map((img) => _PuzzleImageTile(
+                                imagePath: img,
+                                progress: progress[level]![img] ?? 0.0,
+                                onTap: () => _onImageTap(level, img),
+                              )),
                           ...userImages[level]!.map((img) => Stack(
                                 children: [
                                   _PuzzleImageTile(
                                     imagePath: img,
                                     progress: progress[level]![img] ?? 0.0,
                                     onTap: () => _onImageTap(level, img),
-                                    completed:
-                                        (progress[level]![img] ?? 0.0) >= 1.0,
                                   ),
                                   Positioned(
                                     top: 2,
@@ -382,135 +376,86 @@ class _PuzzleImageTile extends StatelessWidget {
   final String imagePath;
   final double progress;
   final VoidCallback onTap;
-  final bool completed;
-  const _PuzzleImageTile({
-    required this.imagePath,
-    required this.progress,
-    required this.onTap,
-    this.completed = false,
-  });
+  const _PuzzleImageTile(
+      {required this.imagePath, required this.progress, required this.onTap});
   @override
   Widget build(BuildContext context) {
     final bool isAsset = imagePath.startsWith('assets/');
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Stack(
-          children: [
-            Material(
-              color: Colors.transparent,
-              elevation: 8,
-              borderRadius: BorderRadius.circular(32),
-              child: InkWell(
-                onTap: onTap,
+        Material(
+          color: Colors.transparent,
+          elevation: 8,
+          borderRadius: BorderRadius.circular(32),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(32),
+            splashColor: Colors.orange.withOpacity(0.18),
+            highlightColor: Colors.orange.withOpacity(0.10),
+            child: Container(
+              width: 96,
+              height: 82,
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white,
+                    Colors.orange.shade50,
+                    Colors.orange.shade100,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(32),
-                splashColor: Colors.orange.withOpacity(0.18),
-                highlightColor: Colors.orange.withOpacity(0.10),
-                child: Container(
-                  width: 96,
-                  height: 82,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.white,
-                        Colors.orange.shade50,
-                        Colors.orange.shade100,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(32),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.orange.withOpacity(0.18),
-                        blurRadius: 18,
-                        spreadRadius: 3,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                    border: Border.all(
-                      color: Colors.orange.withOpacity(0.22),
-                      width: 2.2,
-                    ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.18),
+                    blurRadius: 18,
+                    spreadRadius: 3,
+                    offset: const Offset(0, 8),
                   ),
-                  child: Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: Container(
-                        width: 72,
-                        height: 72,
-                        color: Colors.white,
-                        child: isAsset
-                            ? Image.asset(
-                                imagePath,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Center(
-                                  child: Icon(
-                                    Icons.image,
-                                    color: Colors.grey[400],
-                                    size: 40,
-                                  ),
-                                ),
-                              )
-                            : Image.file(
-                                File(imagePath),
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Center(
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    color: Colors.grey[400],
-                                    size: 40,
-                                  ),
-                                ),
+                ],
+                border: Border.all(
+                  color: Colors.orange.withOpacity(0.22),
+                  width: 2.2,
+                ),
+              ),
+              child: Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    color: Colors.white,
+                    child: isAsset
+                        ? Image.asset(
+                            imagePath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Center(
+                              child: Icon(
+                                Icons.image,
+                                color: Colors.grey[400],
+                                size: 40,
                               ),
-                      ),
-                    ),
+                            ),
+                          )
+                        : Image.file(
+                            File(imagePath),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Center(
+                              child: Icon(
+                                Icons.broken_image,
+                                color: Colors.grey[400],
+                                size: 40,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
               ),
             ),
-            if (completed)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade700,
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(32),
-                      bottomLeft: Radius.circular(16),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.amber.withOpacity(0.4),
-                        blurRadius: 8,
-                        offset: const Offset(2, 2),
-                      ),
-                    ],
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  child: Row(
-                    children: const [
-                      Icon(Icons.emoji_events, color: Colors.white, size: 18),
-                      SizedBox(width: 2),
-                      Text(
-                        'Done!',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          fontFamily: 'Nunito',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
+          ),
         ),
         const SizedBox(height: 8),
         SizedBox(
@@ -852,8 +797,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                         : Stack(
                                             children: [
                                               const Positioned.fill(
-                                                  child:
-                                                      AnimatedBubblesBackground()),
+                                                  child: AnimatedBubbles()),
                                               AspectRatio(
                                                 aspectRatio: _imageAspectRatio!,
                                                 child: ClipRRect(
@@ -943,8 +887,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                             // Kid-friendly, highly visible tray with playful design and easy-to-use scrollbar
                             Container(
                               width: 200,
-                              margin: const EdgeInsets.only(
-                                  top: 18, bottom: 18, right: 16),
+                              margin: const EdgeInsets.only(top: 18, bottom: 18, right: 16),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
@@ -979,157 +922,115 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                         'assets/puzzle/tray_pattern.png',
                                         fit: BoxFit.cover,
                                         repeat: ImageRepeat.repeat,
-                                        errorBuilder: (_, __, ___) =>
-                                            SizedBox.shrink(),
+                                        errorBuilder: (_, __, ___) => SizedBox.shrink(),
                                       ),
                                     ),
                                   ),
                                   DragTarget<int>(
-                                    onWillAccept: (data) {
-                                      // Accept if the piece is currently on the board
-                                      return data != null &&
-                                          boardState.contains(data);
-                                    },
-                                    onAccept: (data) {
-                                      setState(() {
-                                        final boardIdx =
-                                            boardState.indexOf(data);
-                                        if (boardIdx != -1) {
-                                          boardState[boardIdx] = null;
-                                          if (!pieceOrder.contains(data)) {
-                                            pieceOrder.add(data);
-                                          }
-                                        }
-                                      });
-                                    },
-                                    builder:
-                                        (context, candidateData, rejectedData) {
-                                      return Column(
-                                        children: [
-                                          const SizedBox(height: 20),
-                                          Expanded(
-                                            child: Stack(
-                                              children: [
-                                                ListView.separated(
-                                                  scrollDirection:
-                                                      Axis.vertical,
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 18,
-                                                      vertical: 10),
-                                                  physics:
-                                                      const BouncingScrollPhysics(
-                                                          parent:
-                                                              AlwaysScrollableScrollPhysics()),
-                                                  itemBuilder:
-                                                      (context, index) {
-                                                    final pieceIdx =
-                                                        pieceOrder[index];
-                                                    return Draggable<int>(
-                                                      data: pieceIdx,
-                                                      feedback: Material(
-                                                        color:
-                                                            Colors.transparent,
-                                                        child:
-                                                            Transform.translate(
-                                                          offset: Offset(0, 0),
-                                                          child: SizedBox(
-                                                            width: 88,
-                                                            height: 88,
-                                                            child: PuzzlePiece(
-                                                              imageProvider:
-                                                                  _imageProvider,
-                                                              rows: rows,
-                                                              cols: cols,
-                                                              row: pieceIdx ~/
-                                                                  cols,
-                                                              col: pieceIdx %
-                                                                  cols,
-                                                            ),
-                                                          ),
+                                onWillAccept: (data) {
+                                  // Accept if the piece is currently on the board
+                                  return data != null &&
+                                      boardState.contains(data);
+                                },
+                                onAccept: (data) {
+                                  setState(() {
+                                    final boardIdx = boardState.indexOf(data);
+                                    if (boardIdx != -1) {
+                                      boardState[boardIdx] = null;
+                                      if (!pieceOrder.contains(data)) {
+                                        pieceOrder.add(data);
+                                      }
+                                    }
+                                  });
+                                },
+                                builder: (context, candidateData, rejectedData) {
+                                  return Column(
+                                    children: [
+                                      const SizedBox(height: 20),
+                                      Expanded(
+                                        child: Stack(
+                                          children: [
+                                            ListView.separated(
+                                              scrollDirection: Axis.vertical,
+                                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                                              itemBuilder: (context, index) {
+                                                final pieceIdx = pieceOrder[index];
+                                                return Draggable<int>(
+                                                  data: pieceIdx,
+                                                  feedback: Material(
+                                                    color: Colors.transparent,
+                                                    child: Transform.translate(
+                                                      offset: Offset(0, 0),
+                                                      child: SizedBox(
+                                                        width: 88,
+                                                        height: 88,
+                                                        child: PuzzlePiece(
+                                                          imageProvider: _imageProvider,
+                                                          rows: rows,
+                                                          cols: cols,
+                                                          row: pieceIdx ~/ cols,
+                                                          col: pieceIdx % cols,
                                                         ),
-                                                      ),
-                                                      childWhenDragging:
-                                                          Opacity(
-                                                        opacity: 0.25,
-                                                        child: _trayPieceWidget(
-                                                            _imageProvider,
-                                                            pieceIdx),
-                                                      ),
-                                                      onDragStarted: () =>
-                                                          setState(() {
-                                                        draggingIndex =
-                                                            pieceIdx;
-                                                        _draggingPieceIdx =
-                                                            pieceIdx;
-                                                      }),
-                                                      onDraggableCanceled:
-                                                          (_, __) =>
-                                                              setState(() {
-                                                        draggingIndex = null;
-                                                        _draggingPieceIdx =
-                                                            null;
-                                                      }),
-                                                      onDragEnd: (_) {
-                                                        if (_highlightedSlotIdx !=
-                                                            null) {
-                                                          _onPieceDroppedToBoard(
-                                                              _highlightedSlotIdx!,
-                                                              pieceIdx);
-                                                        }
-                                                        setState(() {
-                                                          draggingIndex = null;
-                                                          _draggingPieceIdx =
-                                                              null;
-                                                        });
-                                                      },
-                                                      child: _trayPieceWidget(
-                                                          _imageProvider,
-                                                          pieceIdx),
-                                                    );
-                                                  },
-                                                  separatorBuilder: (_, __) =>
-                                                      const SizedBox(
-                                                          height: 18),
-                                                  itemCount: pieceOrder.length,
-                                                ),
-                                                // Playful scroll indicator (not interactive)
-                                                Positioned(
-                                                  right: 6,
-                                                  top: 24,
-                                                  bottom: 24,
-                                                  child: IgnorePointer(
-                                                    child: Container(
-                                                      width: 14,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors
-                                                            .orange.shade300
-                                                            .withOpacity(0.7),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                        boxShadow: [
-                                                          BoxShadow(
-                                                            color: Colors
-                                                                .deepOrange
-                                                                .withOpacity(
-                                                                    0.18),
-                                                            blurRadius: 8,
-                                                            offset:
-                                                                Offset(0, 2),
-                                                          ),
-                                                        ],
                                                       ),
                                                     ),
                                                   ),
-                                                ),
-                                              ],
+                                                  childWhenDragging: Opacity(
+                                                    opacity: 0.25,
+                                                    child: _trayPieceWidget(_imageProvider, pieceIdx),
+                                                  ),
+                                                  onDragStarted: () => setState(() {
+                                                    draggingIndex = pieceIdx;
+                                                    _draggingPieceIdx = pieceIdx;
+                                                  }),
+                                                  onDraggableCanceled: (_, __) => setState(() {
+                                                    draggingIndex = null;
+                                                    _draggingPieceIdx = null;
+                                                  }),
+                                                  onDragEnd: (_) {
+                                                    if (_highlightedSlotIdx != null) {
+                                                      _onPieceDroppedToBoard(_highlightedSlotIdx!, pieceIdx);
+                                                    }
+                                                    setState(() {
+                                                      draggingIndex = null;
+                                                      _draggingPieceIdx = null;
+                                                    });
+                                                  },
+                                                  child: _trayPieceWidget(_imageProvider, pieceIdx),
+                                                );
+                                              },
+                                              separatorBuilder: (_, __) => const SizedBox(height: 18),
+                                              itemCount: pieceOrder.length,
                                             ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
+                                            // Playful scroll indicator (not interactive)
+                                            Positioned(
+                                              right: 6,
+                                              top: 24,
+                                              bottom: 24,
+                                              child: IgnorePointer(
+                                                child: Container(
+                                                  width: 14,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.orange.shade300.withOpacity(0.7),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.deepOrange.withOpacity(0.18),
+                                                        blurRadius: 8,
+                                                        offset: Offset(0, 2),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
                                 ],
                               ),
                             ),
@@ -1213,14 +1114,12 @@ class _AnimatedBigTypeButton extends StatefulWidget {
   final _PuzzleTheme type;
   final double height;
   final VoidCallback onTap;
-  const _AnimatedBigTypeButton(
-      {required this.type, required this.height, required this.onTap});
+  const _AnimatedBigTypeButton({required this.type, required this.height, required this.onTap});
   @override
   State<_AnimatedBigTypeButton> createState() => _AnimatedBigTypeButtonState();
 }
 
-class _AnimatedBigTypeButtonState extends State<_AnimatedBigTypeButton>
-    with SingleTickerProviderStateMixin {
+class _AnimatedBigTypeButtonState extends State<_AnimatedBigTypeButton> with SingleTickerProviderStateMixin {
   double _scale = 1.0;
   late AnimationController _controller;
   late Animation<double> _sparkleAnim;
@@ -1228,11 +1127,8 @@ class _AnimatedBigTypeButtonState extends State<_AnimatedBigTypeButton>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1200))
-      ..repeat(reverse: true);
-    _sparkleAnim = Tween<double>(begin: 0.85, end: 1.15)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
+    _sparkleAnim = Tween<double>(begin: 0.85, end: 1.15).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -1292,8 +1188,7 @@ class _AnimatedBigTypeButtonState extends State<_AnimatedBigTypeButton>
                       builder: (context, child) {
                         return Transform.scale(
                           scale: _sparkleAnim.value,
-                          child: Icon(widget.type.icon,
-                              size: 54, color: Colors.white.withOpacity(0.95)),
+                          child: Icon(widget.type.icon, size: 54, color: Colors.white.withOpacity(0.95)),
                         );
                       },
                     ),
@@ -1346,8 +1241,7 @@ class _AnimatedBigTypeButtonState extends State<_AnimatedBigTypeButton>
                 top: 12,
                 child: Opacity(
                   opacity: 0.7,
-                  child: Icon(Icons.celebration,
-                      color: widget.type.color, size: 36),
+                  child: Icon(Icons.celebration, color: widget.type.color, size: 36),
                 ),
               ),
             ],
@@ -1365,27 +1259,20 @@ class _AnimatedSparkle extends StatefulWidget {
   @override
   State<_AnimatedSparkle> createState() => _AnimatedSparkleState();
 }
-
-class _AnimatedSparkleState extends State<_AnimatedSparkle>
-    with SingleTickerProviderStateMixin {
+class _AnimatedSparkleState extends State<_AnimatedSparkle> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _anim;
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.7, end: 1.2)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.7, end: 1.2).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
-
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(

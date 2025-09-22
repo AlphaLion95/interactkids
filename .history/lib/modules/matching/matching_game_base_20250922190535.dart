@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'matching_models.dart';
+import '../../widgets/celebration_overlay.dart';
 
 /// Base widget for any matching game type.
 class MatchingGameBase extends StatefulWidget {
@@ -112,86 +113,90 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
     return Scaffold(
       appBar:
           widget.title.isNotEmpty ? AppBar(title: Text(widget.title)) : null,
-      body: Column(
+      body: Stack(
         children: [
-          const SizedBox(height: 12),
-          _MatchedTray(
-              matches: matches, mode: widget.mode, onReset: _resetGame),
-          const SizedBox(height: 12),
-          Expanded(
-            child: completed
-                ? Center(
-                    child: Text('Great job! All pairs matched!',
-                        style: TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold)))
-                : Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 120,
-                          child: Scrollbar(
-                            thumbVisibility: true,
-                            child: ListView(
-                              children: [
-                                for (final item in leftItems)
-                                  GestureDetector(
-                                    onTap: () => _onLeftTap(item),
-                                    child: Container(
-                                      margin: const EdgeInsets.symmetric(
-                                          vertical: 8),
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: selectedLeft == item
-                                              ? Colors.orange
-                                              : Colors.transparent,
-                                          width: 3,
+          Column(
+            children: [
+              const SizedBox(height: 12),
+              _MatchedTray(matches: matches, mode: widget.mode, onReset: _resetGame),
+              const SizedBox(height: 12),
+              Expanded(
+                child: completed
+                    ? Center(
+                        child: Text('Great job! All pairs matched!',
+                            style: TextStyle(
+                                fontSize: 24, fontWeight: FontWeight.bold)))
+                    : Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 120,
+                              child: Scrollbar(
+                                thumbVisibility: true,
+                                child: ListView(
+                                  children: [
+                                    for (final item in leftItems)
+                                      GestureDetector(
+                                        onTap: () => _onLeftTap(item),
+                                        child: Container(
+                                          margin: const EdgeInsets.symmetric(
+                                              vertical: 8),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: selectedLeft == item
+                                                  ? Colors.orange
+                                                  : Colors.transparent,
+                                              width: 3,
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: widget.mode
+                                              .buildLeftItem(context, item),
                                         ),
-                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: widget.mode
-                                          .buildLeftItem(context, item),
-                                    ),
-                                  ),
-                              ],
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 32),
-                        SizedBox(
-                          width: 120,
-                          child: Scrollbar(
-                            thumbVisibility: true,
-                            child: ListView(
-                              children: [
-                                for (final item in rightItems)
-                                  GestureDetector(
-                                    onTap: () => _onRightTap(item),
-                                    child: Container(
-                                      margin: const EdgeInsets.symmetric(
-                                          vertical: 8),
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: selectedRight == item
-                                              ? Colors.orange
-                                              : Colors.transparent,
-                                          width: 3,
+                            const SizedBox(width: 32),
+                            SizedBox(
+                              width: 120,
+                              child: Scrollbar(
+                                thumbVisibility: true,
+                                child: ListView(
+                                  children: [
+                                    for (final item in rightItems)
+                                      GestureDetector(
+                                        onTap: () => _onRightTap(item),
+                                        child: Container(
+                                          margin: const EdgeInsets.symmetric(
+                                              vertical: 8),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: selectedRight == item
+                                                  ? Colors.orange
+                                                  : Colors.transparent,
+                                              width: 3,
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: widget.mode
+                                              .buildRightItem(context, item),
                                         ),
-                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: widget.mode
-                                          .buildRightItem(context, item),
-                                    ),
-                                  ),
-                              ],
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
+              ),
+            ],
           ),
+          CelebrationOverlay(show: completed),
         ],
       ),
     );
@@ -267,8 +272,7 @@ class _MatchedTray extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child:
-                      const Icon(Icons.refresh, color: Colors.blue, size: 22),
+                  child: const Icon(Icons.refresh, color: Colors.blue, size: 22),
                 ),
               ),
             ),

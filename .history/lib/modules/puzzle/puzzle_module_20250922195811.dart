@@ -12,7 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_piece.dart';
-import 'package:interactkids/widgets/animated_bubbles_background.dart';
+import 'package:interactkids/modules/puzzle/widgets/animated_bubbles.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_board_with_tray.dart';
 
 class PuzzleTypeScreen extends StatelessWidget {
@@ -266,7 +266,7 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const Positioned.fill(child: AnimatedBubblesBackground()),
+          const Positioned.fill(child: AnimatedBubbles()),
           Column(
             children: [
               AppBar(
@@ -852,8 +852,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                         : Stack(
                                             children: [
                                               const Positioned.fill(
-                                                  child:
-                                                      AnimatedBubblesBackground()),
+                                                  child: AnimatedBubbles()),
                                               AspectRatio(
                                                 aspectRatio: _imageAspectRatio!,
                                                 child: ClipRRect(

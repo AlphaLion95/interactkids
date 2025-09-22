@@ -12,8 +12,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_piece.dart';
-import 'package:interactkids/widgets/animated_bubbles_background.dart';
+import 'package:interactkids/modules/puzzle/widgets/animated_bubbles.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_board_with_tray.dart';
+import 'package:interactkids/widgets/celebration_overlay.dart';
 
 class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
@@ -30,7 +31,7 @@ class PuzzleTypeScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF7F6FF),
       body: Stack(
         children: [
-          const Positioned.fill(child: AnimatedBubblesBackground()),
+          const Positioned.fill(child: AnimatedBubbles()),
           Column(
             children: [
               AppBar(
@@ -266,7 +267,7 @@ class _PuzzleLevelScreenState extends State<PuzzleLevelScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const Positioned.fill(child: AnimatedBubblesBackground()),
+          const Positioned.fill(child: AnimatedBubbles()),
           Column(
             children: [
               AppBar(
@@ -747,24 +748,10 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
           break;
         }
       }
-      if (correct) {
-        hasWon = true;
-        // Simple win dialog
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('You Win!'),
-            content: const Text('Great job — puzzle complete.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+      if (correct && !hasWon) {
+        setState(() {
+          hasWon = true;
+        });
       }
     }
   }
@@ -774,70 +761,89 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
     print('DEBUG: pieceOrder = '
         '${pieceOrder.toString()}');
     return Scaffold(
-      body: Listener(
-        onPointerMove: (details) {
-          setState(() {
-            _dragGlobalPosition = details.position;
-          });
-          _updateHighlightSlot(details.position);
-        },
-        onPointerUp: (_) {
-          // On drag end, if a piece is being dragged and a slot is highlighted, drop it there
-          if (_draggingPieceIdx != null && _highlightedSlotIdx != null) {
-            _onPieceDroppedToBoard(_highlightedSlotIdx!, _draggingPieceIdx!);
-          }
-          setState(() {
-            _dragGlobalPosition = null;
-            _draggingPieceIdx = null;
-            _highlightedSlotIdx = null;
-          });
-        },
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // Floating Back Button (top left, pillow style, outside puzzle box)
-              Positioned(
-                top: 18,
-                left: 18,
-                child: Material(
-                  color: Colors.white,
-                  elevation: 8,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.10),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+      body: Stack(
+        children: [
+          Listener(
+            onPointerMove: (details) {
+              setState(() {
+                _dragGlobalPosition = details.position;
+              });
+              _updateHighlightSlot(details.position);
+            },
+            onPointerUp: (_) {
+              // On drag end, if a piece is being dragged and a slot is highlighted, drop it there
+              if (_draggingPieceIdx != null && _highlightedSlotIdx != null) {
+                _onPieceDroppedToBoard(_highlightedSlotIdx!, _draggingPieceIdx!);
+              }
+              setState(() {
+                _dragGlobalPosition = null;
+                _draggingPieceIdx = null;
+                _highlightedSlotIdx = null;
+              });
+            },
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  // Floating Back Button (top left, pillow style, outside puzzle box)
+                  Positioned(
+                    top: 18,
+                    left: 18,
+                    child: Material(
+                      color: Colors.white,
+                      elevation: 8,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.10),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.arrow_back,
-                            color: Colors.orange, size: 30),
+                          child: const Center(
+                            child: Icon(Icons.arrow_back,
+                                color: Colors.orange, size: 30),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  // Main content
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isLandscape =
+                          constraints.maxWidth > constraints.maxHeight;
+                      return isLandscape
+                          ? Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  // ...existing code...
+                                ),
+                              ],
+                            )
+                          : Column(
+                              // ...existing code...
+                            );
+                    },
+                  ),
+                ],
               ),
-              // Main content
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isLandscape =
-                      constraints.maxWidth > constraints.maxHeight;
-                  return isLandscape
-                      ? Row(
-                          children: [
-                            Expanded(
-                              flex: 3,
+            ),
+          ),
+          // Celebration overlay on top of all content
+          CelebrationOverlay(show: hasWon),
+        ],
+      ),
                               child: Center(
                                 child: ConstrainedBox(
                                   constraints: const BoxConstraints(
@@ -852,8 +858,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                         : Stack(
                                             children: [
                                               const Positioned.fill(
-                                                  child:
-                                                      AnimatedBubblesBackground()),
+                                                  child: AnimatedBubbles()),
                                               AspectRatio(
                                                 aspectRatio: _imageAspectRatio!,
                                                 child: ClipRRect(

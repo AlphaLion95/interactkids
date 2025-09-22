@@ -1,3 +1,4 @@
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
@@ -5,21 +6,18 @@ class AnimatedBubblesBackground extends StatefulWidget {
   const AnimatedBubblesBackground({Key? key}) : super(key: key);
 
   @override
-  State<AnimatedBubblesBackground> createState() =>
-      _AnimatedBubblesBackgroundState();
+  State<AnimatedBubblesBackground> createState() => _AnimatedBubblesBackgroundState();
 }
 
-class _AnimatedBubblesBackgroundState extends State<AnimatedBubblesBackground>
-    with SingleTickerProviderStateMixin {
+class _AnimatedBubblesBackgroundState extends State<AnimatedBubblesBackground> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late List<_Bubble> _bubbles;
 
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 12))
-          ..repeat();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 12))
+      ..repeat();
     _bubbles = List.generate(22, (i) => _Bubble.random());
   }
 
@@ -46,15 +44,23 @@ class _Bubble {
   final double x, radius, speed, phase;
   final Color color;
   _Bubble(this.x, this.radius, this.speed, this.phase, this.color);
-  factory _Bubble.random() {
-    final rand = math.Random();
+
+  static _Bubble random() {
+    final colors = [
+      Colors.orange,
+      Colors.blue,
+      Colors.purple,
+      Colors.green,
+      Colors.pink,
+      Colors.yellow
+    ];
+    final rnd = math.Random();
     return _Bubble(
-      rand.nextDouble(),
-      16 + rand.nextDouble() * 24,
-      0.2 + rand.nextDouble() * 0.5,
-      rand.nextDouble() * 2 * math.pi,
-      Colors.primaries[rand.nextInt(Colors.primaries.length)]
-          .withOpacity(0.18 + rand.nextDouble() * 0.18),
+      rnd.nextDouble(),
+      18 + rnd.nextDouble() * 32,
+      0.08 + rnd.nextDouble() * 0.12,
+      rnd.nextDouble(),
+      colors[rnd.nextInt(colors.length)],
     );
   }
 }
@@ -63,12 +69,13 @@ class _BubblesPainter extends CustomPainter {
   final List<_Bubble> bubbles;
   final double t;
   _BubblesPainter(this.bubbles, this.t);
+
   @override
   void paint(Canvas canvas, Size size) {
     for (final b in bubbles) {
       final y = size.height * ((b.speed * t + b.phase) % 1.0);
       final x = size.width * b.x;
-      final paint = Paint()..color = b.color;
+      final paint = Paint()..color = b.color.withOpacity(0.18);
       canvas.drawCircle(Offset(x, y), b.radius, paint);
     }
   }

@@ -1,3 +1,4 @@
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
@@ -5,21 +6,18 @@ class AnimatedBubblesBackground extends StatefulWidget {
   const AnimatedBubblesBackground({Key? key}) : super(key: key);
 
   @override
-  State<AnimatedBubblesBackground> createState() =>
-      _AnimatedBubblesBackgroundState();
+  State<AnimatedBubblesBackground> createState() => _AnimatedBubblesBackgroundState();
 }
 
-class _AnimatedBubblesBackgroundState extends State<AnimatedBubblesBackground>
-    with SingleTickerProviderStateMixin {
+class _AnimatedBubblesBackgroundState extends State<AnimatedBubblesBackground> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late List<_Bubble> _bubbles;
 
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 12))
-          ..repeat();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 12))
+      ..repeat();
     _bubbles = List.generate(22, (i) => _Bubble.random());
   }
 
