@@ -14,7 +14,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_piece.dart';
 import 'package:interactkids/widgets/animated_bubbles_background.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_board_with_tray.dart';
-import 'package:interactkids/widgets/celebration_overlay.dart';
 
 class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
@@ -552,7 +551,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   int? _highlightedSlotIdx;
   List<GlobalKey> _slotKeys = [];
   Offset? _dragGlobalPosition;
-  bool _showCelebration = false;
 
   @override
   void initState() {
@@ -636,12 +634,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
             boardState.where((e) => e != null).length / (rows * cols);
         widget.onProgress
             ?.call(percent, boardState: boardState, pieceOrder: pieceOrder);
-        if (percent >= 1.0) {
-          // Show celebration overlay when puzzle is completed
-          setState(() {
-            _showCelebration = true;
-          });
-        }
       }
     });
   }
@@ -1128,18 +1120,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                         );
                 },
               ),
-              // Celebration overlay shown when puzzle completed
-              if (_showCelebration)
-                Positioned.fill(
-                  child: CelebrationOverlay(
-                    show: true,
-                    onComplete: () {
-                      setState(() {
-                        _showCelebration = false;
-                      });
-                    },
-                  ),
-                ),
             ],
           ),
         ),

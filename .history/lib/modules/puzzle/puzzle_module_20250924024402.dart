@@ -1130,14 +1130,9 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
               ),
               // Celebration overlay shown when puzzle completed
               if (_showCelebration)
-                Positioned.fill(
+                const Positioned.fill(
                   child: CelebrationOverlay(
                     show: true,
-                    onComplete: () {
-                      setState(() {
-                        _showCelebration = false;
-                      });
-                    },
                   ),
                 ),
             ],

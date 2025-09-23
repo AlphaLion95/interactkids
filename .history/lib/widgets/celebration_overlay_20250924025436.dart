@@ -110,13 +110,11 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
               children: [
                 for (int i = 0; i < count; i++)
                   Positioned(
-                    left: (w - 80) * (i / (count - 1)) +
-                        20 * math.sin(t * math.pi * 2 + i),
+                    left: (w - 80) * (i / (count - 1)) + 20 * math.sin(t * math.pi * 2 + i),
                     bottom: -120 + t * (h + 240) + (i % 3) * 20,
                     child: Opacity(
                       opacity: (1.0 - t) * 0.9 + 0.1,
-                      child: _Balloon(
-                          color: Colors.primaries[i % Colors.primaries.length]),
+                      child: _Balloon(color: Colors.primaries[i % Colors.primaries.length]),
                     ),
                   ),
               ],
@@ -135,17 +133,13 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
               children: [
                 for (int i = 0; i < petalCount; i++)
                   Positioned(
-                    left: (width - 20) * ((i + 1) / (petalCount + 1)) +
-                        10 * math.cos(t * math.pi * 2 + i),
+                    left: (width - 20) * ((i + 1) / (petalCount + 1)) + 10 * math.cos(t * math.pi * 2 + i),
                     top: -40 + t * (height + 80) + (i * 8),
                     child: Opacity(
                       opacity: (1.0 - (t + i * 0.02)).clamp(0.0, 1.0),
                       child: Transform.rotate(
                         angle: (t * 3.1415) * (i.isEven ? 1 : -1) + i * 0.1,
-                        child: _FlowerPetal(
-                            color: Colors.pink[(100 + (i * 50)) % 400]
-                                    ?.withOpacity(0.95) ??
-                                Colors.pink.shade200),
+                        child: _FlowerPetal(color: Colors.pink[(100 + (i * 50)) % 400]?.withOpacity(0.95) ?? Colors.pink.shade200),
                       ),
                     ),
                   ),

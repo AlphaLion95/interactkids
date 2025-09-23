@@ -117,9 +117,8 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
     return Stack(
       children: [
         Scaffold(
-          appBar: widget.title.isNotEmpty
-              ? AppBar(title: Text(widget.title))
-              : null,
+          appBar:
+              widget.title.isNotEmpty ? AppBar(title: Text(widget.title)) : null,
           body: Column(
             children: [
               const SizedBox(height: 12),
@@ -156,8 +155,7 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
                                                   : Colors.transparent,
                                               width: 3,
                                             ),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(12),
                                           ),
                                           child: widget.mode
                                               .buildLeftItem(context, item),
@@ -187,8 +185,7 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
                                                   : Colors.transparent,
                                               width: 3,
                                             ),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(12),
                                           ),
                                           child: widget.mode
                                               .buildRightItem(context, item),
@@ -207,7 +204,6 @@ class _MatchingGameBaseState extends State<MatchingGameBase> {
         ),
         if (_showCelebration)
           CelebrationOverlay(
-            show: true,
             onComplete: () {
               setState(() {
                 _showCelebration = false;

@@ -165,11 +165,7 @@ class PuzzleBoardWithTray extends StatelessWidget {
         Positioned.fill(
           child: IgnorePointer(
             child: CustomPaint(
-              painter: _BoardGridPainter(
-                  rows: rows,
-                  cols: cols,
-                  color: Colors.grey.withOpacity(0.18),
-                  strokeWidth: 1.0),
+              painter: _BoardGridPainter(rows: rows, cols: cols, color: Colors.grey.withOpacity(0.18), strokeWidth: 1.0),
             ),
           ),
         ),
@@ -184,11 +180,7 @@ class _BoardGridPainter extends CustomPainter {
   final Color color;
   final double strokeWidth;
 
-  _BoardGridPainter(
-      {required this.rows,
-      required this.cols,
-      this.color = const Color(0x22000000),
-      this.strokeWidth = 1.0});
+  _BoardGridPainter({required this.rows, required this.cols, this.color = const Color(0x22000000), this.strokeWidth = 1.0});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -217,9 +209,6 @@ class _BoardGridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _BoardGridPainter oldDelegate) {
-    return oldDelegate.rows != rows ||
-        oldDelegate.cols != cols ||
-        oldDelegate.color != color ||
-        oldDelegate.strokeWidth != strokeWidth;
+    return oldDelegate.rows != rows || oldDelegate.cols != cols || oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
   }
 }

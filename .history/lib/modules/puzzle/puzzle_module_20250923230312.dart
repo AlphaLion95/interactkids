@@ -14,7 +14,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_piece.dart';
 import 'package:interactkids/widgets/animated_bubbles_background.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_board_with_tray.dart';
-import 'package:interactkids/widgets/celebration_overlay.dart';
 
 class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
@@ -398,61 +397,77 @@ class _PuzzleImageTile extends StatelessWidget {
       children: [
         Stack(
           children: [
-            // Solid circular 'pillow' button
             Material(
-              color: Colors.white,
-              elevation: 10,
-              shape: const CircleBorder(),
+              color: Colors.transparent,
+              elevation: 8,
+              borderRadius: BorderRadius.circular(32),
               child: InkWell(
                 onTap: onTap,
-                customBorder: const CircleBorder(),
+                borderRadius: BorderRadius.circular(32),
                 splashColor: Colors.orange.withOpacity(0.18),
                 highlightColor: Colors.orange.withOpacity(0.10),
                 child: Container(
                   width: 96,
-                  height: 96,
+                  height: 82,
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
                     gradient: LinearGradient(
                       colors: [
                         Colors.white,
                         Colors.orange.shade50,
+                        Colors.orange.shade100,
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.18),
+                        blurRadius: 18,
+                        spreadRadius: 3,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                     border: Border.all(
-                      color: Colors.orange.withOpacity(0.12),
-                      width: 1.5,
+                      color: Colors.orange.withOpacity(0.22),
+                      width: 2.2,
                     ),
                   ),
-                  child: ClipOval(
-                    child: isAsset
-                        ? Image.asset(
-                            imagePath,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Center(
-                              child: Icon(
-                                Icons.image,
-                                color: Colors.grey[400],
-                                size: 40,
+                  child: Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(
+                        width: 72,
+                        height: 72,
+                        color: Colors.white,
+                        child: isAsset
+                            ? Image.asset(
+                                imagePath,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Center(
+                                  child: Icon(
+                                    Icons.image,
+                                    color: Colors.grey[400],
+                                    size: 40,
+                                  ),
+                                  height:
+                                    pieceSize * 0.75,
+                            : Image.file(
+                                File(imagePath),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Center(
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: Colors.grey[400],
+                                    size: 40,
+                                  ),
+                                ),
                               ),
-                            ),
-                          )
-                        : Image.file(
-                            File(imagePath),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Center(
-                              child: Icon(
-                                Icons.broken_image,
-                                color: Colors.grey[400],
-                                size: 40,
-                              ),
-                            ),
-                          ),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -552,7 +567,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   int? _highlightedSlotIdx;
   List<GlobalKey> _slotKeys = [];
   Offset? _dragGlobalPosition;
-  bool _showCelebration = false;
 
   @override
   void initState() {
@@ -636,12 +650,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
             boardState.where((e) => e != null).length / (rows * cols);
         widget.onProgress
             ?.call(percent, boardState: boardState, pieceOrder: pieceOrder);
-        if (percent >= 1.0) {
-          // Show celebration overlay when puzzle is completed
-          setState(() {
-            _showCelebration = true;
-          });
-        }
       }
     });
   }
@@ -1002,12 +1010,9 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                                                 color: Colors
                                                                     .transparent,
                                                                 child: SizedBox(
-                                                                  width:
-                                                                      pieceSize,
-                                                                  height:
-                                                                      pieceSize,
-                                                                  child:
-                                                                      PuzzlePiece(
+                                                                  width: pieceSize,
+                                                                  height: pieceSize * 0.75,
+                                                                  child: PuzzlePiece(
                                                                     imageProvider:
                                                                         _imageProvider,
                                                                     rows: rows,
@@ -1066,29 +1071,29 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                                                       null;
                                                                 });
                                                               },
-                                                              child: Container(
-                                                                margin: const EdgeInsets
-                                                                    .symmetric(
-                                                                    vertical:
-                                                                        6),
-                                                                width:
-                                                                    pieceSize,
-                                                                height:
-                                                                    pieceSize,
-                                                                child:
-                                                                    PuzzlePiece(
-                                                                  imageProvider:
-                                                                      _imageProvider,
-                                                                  rows: rows,
-                                                                  cols: cols,
-                                                                  row:
-                                                                      pieceIdx ~/
-                                                                          cols,
-                                                                  col:
-                                                                      pieceIdx %
-                                                                          cols,
-                                                                ),
-                                                              ),
+                                child: Container(
+                                margin: const EdgeInsets
+                                  .symmetric(
+                                  vertical:
+                                    6),
+                                width:
+                                  pieceSize,
+                                height:
+                                  pieceSize * 0.75,
+                                child:
+                                  PuzzlePiece(
+                                  imageProvider:
+                                    _imageProvider,
+                                  rows: rows,
+                                  cols: cols,
+                                  row:
+                                    pieceIdx ~/
+                                      cols,
+                                  col:
+                                    pieceIdx %
+                                      cols,
+                                ),
+                                ),
                                                             );
                                                           },
                                                         ),
@@ -1126,25 +1131,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                           child: Text(
                               'Please rotate your device to landscape for the best puzzle experience.'),
                         );
-                },
-              ),
-              // Celebration overlay shown when puzzle completed
-              if (_showCelebration)
-                Positioned.fill(
-                  child: CelebrationOverlay(
-                    show: true,
-                    onComplete: () {
-                      setState(() {
-                        _showCelebration = false;
-                      });
-                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   // _trayPieceWidget is now unused and can be removed.
@@ -1196,29 +1182,18 @@ class _AnimatedBigTypeButtonState extends State<_AnimatedBigTypeButton>
           scale: _scale,
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                height: widget.height.clamp(120, 200),
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      widget.type.color.withOpacity(0.95),
-                      Colors.white.withOpacity(0.85),
-                      widget.type.color.withOpacity(0.85),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(36),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.type.color.withOpacity(0.25),
-                      blurRadius: 32,
-                      spreadRadius: 4,
-                      offset: const Offset(0, 12),
+                                                              child: Container(
+                                                                margin: const EdgeInsets.symmetric(vertical: 6),
+                                                                width: pieceSize,
+                                                                height: pieceSize * 0.75,
+                                                                child: PuzzlePiece(
+                                                                  imageProvider: _imageProvider,
+                                                                  rows: rows,
+                                                                  cols: cols,
+                                                                  row: pieceIdx ~/ cols,
+                                                                  col: pieceIdx % cols,
+                                                                ),
+                                                              ),
                     ),
                   ],
                   border: Border.all(

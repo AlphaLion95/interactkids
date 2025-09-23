@@ -14,7 +14,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_piece.dart';
 import 'package:interactkids/widgets/animated_bubbles_background.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_board_with_tray.dart';
-import 'package:interactkids/widgets/celebration_overlay.dart';
 
 class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
@@ -397,11 +396,11 @@ class _PuzzleImageTile extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Stack(
+          alignment: Alignment.center,
           children: [
-            // Solid circular 'pillow' button
             Material(
-              color: Colors.white,
-              elevation: 10,
+              color: Colors.transparent,
+              elevation: 12,
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: onTap,
@@ -409,22 +408,22 @@ class _PuzzleImageTile extends StatelessWidget {
                 splashColor: Colors.orange.withOpacity(0.18),
                 highlightColor: Colors.orange.withOpacity(0.10),
                 child: Container(
-                  width: 96,
-                  height: 96,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  width: 88,
+                  height: 88,
                   decoration: BoxDecoration(
+                    color: Colors.white,
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.white,
-                        Colors.orange.shade50,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.18),
+                        blurRadius: 18,
+                        spreadRadius: 3,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                     border: Border.all(
-                      color: Colors.orange.withOpacity(0.12),
-                      width: 1.5,
+                      color: Colors.orange.withOpacity(0.22),
+                      width: 2.2,
                     ),
                   ),
                   child: ClipOval(
@@ -552,7 +551,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   int? _highlightedSlotIdx;
   List<GlobalKey> _slotKeys = [];
   Offset? _dragGlobalPosition;
-  bool _showCelebration = false;
 
   @override
   void initState() {
@@ -636,12 +634,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
             boardState.where((e) => e != null).length / (rows * cols);
         widget.onProgress
             ?.call(percent, boardState: boardState, pieceOrder: pieceOrder);
-        if (percent >= 1.0) {
-          // Show celebration overlay when puzzle is completed
-          setState(() {
-            _showCelebration = true;
-          });
-        }
       }
     });
   }
@@ -763,6 +755,8 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                                   CircularProgressIndicator());
                                         }
                                         // Maximize board size to all available height and width
+                                        const double trayWidth = 200;
+                                        const double trayMargin = 16;
                                         double availableWidth =
                                             constraints.maxWidth;
                                         double availableHeight =
@@ -871,8 +865,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                 Builder(
                                   builder: (context) {
                                     // Calculate board piece size to match tray pieces
-                                    // Make tray and pieces smaller for kid-friendly look
-                                    double trayWidth = 120; // was 200
+                                    double trayWidth = 200;
                                     double availableWidth =
                                         constraints.maxWidth;
                                     double availableHeight =
@@ -885,9 +878,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                       boardWidth =
                                           boardHeight * _imageAspectRatio!;
                                     }
-                                    // Reduce piece size multiplier so tray pieces appear small
-                                    double pieceSize =
-                                        (boardWidth / cols) * 0.45; // was 1.0
+                                    double pieceSize = boardWidth / cols;
                                     return DragTarget<int>(
                                       onWillAccept: (data) {
                                         // Accept if the piece is not already in the tray
@@ -1128,18 +1119,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                         );
                 },
               ),
-              // Celebration overlay shown when puzzle completed
-              if (_showCelebration)
-                Positioned.fill(
-                  child: CelebrationOverlay(
-                    show: true,
-                    onComplete: () {
-                      setState(() {
-                        _showCelebration = false;
-                      });
-                    },
-                  ),
-                ),
             ],
           ),
         ),

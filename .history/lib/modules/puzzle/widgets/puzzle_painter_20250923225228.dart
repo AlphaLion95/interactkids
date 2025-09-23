@@ -1,6 +1,9 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
+import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
+
 class PuzzlePainter extends CustomPainter {
   final ui.Image image;
   final int rows;
@@ -32,8 +35,8 @@ class PuzzlePainter extends CustomPainter {
     // when pieces are very small. This also gives a tiny visible border
     // so kids can better identify piece edges.
     final inset = 1.0;
-    final dst = Rect.fromLTWH(
-        inset, inset, size.width - inset * 2, size.height - inset * 2);
+    final dst = Rect.fromLTWH(inset, inset, size.width - inset * 2,
+        size.height - inset * 2);
 
     final paint = Paint()..isAntiAlias = true;
     // Prefer higher quality sampling when scaling down images

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import 'package:confetti/confetti.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -16,7 +15,7 @@ class CelebrationOverlay extends StatefulWidget {
 }
 
 class _CelebrationOverlayState extends State<CelebrationOverlay>
-    with TickerProviderStateMixin {
+  with TickerProviderStateMixin {
   late ConfettiController _confettiController;
   late AnimationController _balloonController;
   late AnimationController _flowersController;
@@ -26,14 +25,14 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
   void initState() {
     super.initState();
     _confettiController =
-        ConfettiController(duration: const Duration(seconds: 4));
+        ConfettiController(duration: const Duration(seconds: 2));
     _balloonController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 2),
     );
     _flowersController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 220 ~/ 60),
     );
     _audioPlayer = AudioPlayer();
     if (widget.show) _start();
@@ -57,7 +56,7 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
         _audioPlayer.play();
       });
     } catch (_) {}
-    Future.delayed(const Duration(seconds: 4), () {
+    Future.delayed(const Duration(seconds: 2), () {
       if (widget.onComplete != null) widget.onComplete!();
     });
   }
@@ -98,54 +97,44 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
             ],
           ),
         ),
-        // Balloons - spread across full width with varied offsets
+        // Balloons
         AnimatedBuilder(
           animation: _balloonController,
           builder: (context, child) {
             final t = _balloonController.value;
-            final w = MediaQuery.of(context).size.width;
-            final h = MediaQuery.of(context).size.height;
-            const count = 10;
             return Stack(
               children: [
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < 6; i++)
                   Positioned(
-                    left: (w - 80) * (i / (count - 1)) +
-                        20 * math.sin(t * math.pi * 2 + i),
-                    bottom: -120 + t * (h + 240) + (i % 3) * 20,
+                    left: 40.0 + i * 48.0 + 24 * (1 - t),
+                    bottom:
+                        -120 + t * (MediaQuery.of(context).size.height + 120),
                     child: Opacity(
-                      opacity: (1.0 - t) * 0.9 + 0.1,
-                      child: _Balloon(
-                          color: Colors.primaries[i % Colors.primaries.length]),
+                      opacity: 0.7 * (1 - t) + 0.3,
+                      child: _Balloon(color: Colors.primaries[i]),
                     ),
                   ),
               ],
             );
           },
         ),
-        // Falling flowers / petals across full width
+        // Falling flowers / petals
         AnimatedBuilder(
           animation: _flowersController,
           builder: (context, child) {
             final t = _flowersController.value;
             final height = MediaQuery.of(context).size.height;
-            final width = MediaQuery.of(context).size.width;
-            const petalCount = 14;
             return Stack(
               children: [
-                for (int i = 0; i < petalCount; i++)
+                for (int i = 0; i < 8; i++)
                   Positioned(
-                    left: (width - 20) * ((i + 1) / (petalCount + 1)) +
-                        10 * math.cos(t * math.pi * 2 + i),
-                    top: -40 + t * (height + 80) + (i * 8),
+                    left: 20.0 + i * 42.0 + (i.isOdd ? 18.0 : 0.0),
+                    top: -40 + t * (height + 80) + (i * 14),
                     child: Opacity(
-                      opacity: (1.0 - (t + i * 0.02)).clamp(0.0, 1.0),
+                      opacity: (1.0 - (t + i * 0.05)).clamp(0.0, 1.0),
                       child: Transform.rotate(
-                        angle: (t * 3.1415) * (i.isEven ? 1 : -1) + i * 0.1,
-                        child: _FlowerPetal(
-                            color: Colors.pink[(100 + (i * 50)) % 400]
-                                    ?.withOpacity(0.95) ??
-                                Colors.pink.shade200),
+                        angle: (t * 3.14) * (i.isEven ? 1 : -1),
+                        child: _FlowerPetal(color: Colors.pink.shade200),
                       ),
                     ),
                   ),

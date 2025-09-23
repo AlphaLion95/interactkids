@@ -14,7 +14,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_piece.dart';
 import 'package:interactkids/widgets/animated_bubbles_background.dart';
 import 'package:interactkids/modules/puzzle/widgets/puzzle_board_with_tray.dart';
-import 'package:interactkids/widgets/celebration_overlay.dart';
 
 class PuzzleTypeScreen extends StatelessWidget {
   final List<_PuzzleTheme> types = const [
@@ -397,11 +396,11 @@ class _PuzzleImageTile extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Stack(
+          alignment: Alignment.center,
           children: [
-            // Solid circular 'pillow' button
             Material(
-              color: Colors.white,
-              elevation: 10,
+              color: Colors.transparent,
+              elevation: 12,
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: onTap,
@@ -409,22 +408,22 @@ class _PuzzleImageTile extends StatelessWidget {
                 splashColor: Colors.orange.withOpacity(0.18),
                 highlightColor: Colors.orange.withOpacity(0.10),
                 child: Container(
-                  width: 96,
-                  height: 96,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  width: 88,
+                  height: 88,
                   decoration: BoxDecoration(
+                    color: Colors.white,
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.white,
-                        Colors.orange.shade50,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.18),
+                        blurRadius: 18,
+                        spreadRadius: 3,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                     border: Border.all(
-                      color: Colors.orange.withOpacity(0.12),
-                      width: 1.5,
+                      color: Colors.orange.withOpacity(0.22),
+                      width: 2.2,
                     ),
                   ),
                   child: ClipOval(
@@ -545,430 +544,367 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
   late List<int> pieceOrder;
   late int rows;
   late int cols;
-  late ImageProvider _imageProvider;
-  double? _imageAspectRatio;
-  int? draggingIndex;
-  int? _draggingPieceIdx;
-  int? _highlightedSlotIdx;
-  List<GlobalKey> _slotKeys = [];
-  Offset? _dragGlobalPosition;
-  bool _showCelebration = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Force landscape orientation
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    rows = widget.rows;
-    cols = widget.cols;
-    boardState =
-        widget.initialBoardState ?? List<int?>.filled(rows * cols, null);
-    // If restoring a saved board state, tray should contain all pieces not on the board
-    if (widget.initialPieceOrder != null) {
-      pieceOrder = List<int>.from(widget.initialPieceOrder!);
-    } else {
-      // If boardState is not empty, tray = all pieces not on board
-      final allPieces = List<int>.generate(rows * cols, (i) => i);
-      final onBoard = boardState.whereType<int>().toSet();
-      pieceOrder = allPieces.where((i) => !onBoard.contains(i)).toList();
-    }
-    _slotKeys = List.generate(rows * cols, (index) => GlobalKey());
-    if (widget.imagePath != null) {
-      _imageProvider = (widget.imagePath!.startsWith('assets/')
-          ? AssetImage(widget.imagePath!)
-          : FileImage(File(widget.imagePath!))) as ImageProvider<Object>;
-      _resolveImage();
-    }
-  }
-
-  @override
-  void dispose() {
-    // Restore orientation to allow all
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    super.dispose();
-  }
-
-  void _resolveImage() {
-    final ImageStream stream =
-        _imageProvider.resolve(const ImageConfiguration());
-    stream.addListener(ImageStreamListener((ImageInfo info, bool _) {
-      final width = info.image.width;
-      final height = info.image.height;
-      setState(() {
-        _imageAspectRatio = width / height;
-      });
-    }));
-  }
-
-  void _resetGame() {
-    setState(() {
-      boardState = List<int?>.filled(rows * cols, null);
-      pieceOrder = List<int>.generate(rows * cols, (i) => i);
-    });
-    widget.onProgress
-        ?.call(0.0, boardState: boardState, pieceOrder: pieceOrder);
-  }
-
-  void _onPieceDroppedToBoard(int slotIdx, int pieceIdx) {
-    setState(() {
-      if (boardState[slotIdx] == null) {
-        if (pieceOrder.contains(pieceIdx)) {
-          // Piece is from tray
-          boardState[slotIdx] = pieceIdx;
-          pieceOrder.remove(pieceIdx);
-        } else {
-          // Piece is from another board slot
-          int? fromIdx = boardState.indexOf(pieceIdx);
-          if (fromIdx != -1) {
-            boardState[fromIdx] = null;
-            boardState[slotIdx] = pieceIdx;
-          }
-        }
-        final percent =
-            boardState.where((e) => e != null).length / (rows * cols);
-        widget.onProgress
-            ?.call(percent, boardState: boardState, pieceOrder: pieceOrder);
-        if (percent >= 1.0) {
-          // Show celebration overlay when puzzle is completed
-          setState(() {
-            _showCelebration = true;
-          });
-        }
-      }
-    });
-  }
-
-  void _onPieceRemovedFromBoard(int slotIdx, int pieceIdx) {
-    setState(() {
-      if (boardState[slotIdx] == pieceIdx) {
-        boardState[slotIdx] = null;
-        if (!pieceOrder.contains(pieceIdx)) {
-          pieceOrder.add(pieceIdx);
-        }
-        widget.onProgress?.call(
-            boardState.where((e) => e != null).length / (rows * cols),
-            boardState: boardState,
-            pieceOrder: pieceOrder);
-      }
-    });
-  }
-
-  void _updateHighlightSlot(Offset globalPosition) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      int? foundIdx;
-      for (int i = 0; i < _slotKeys.length; i++) {
-        final key = _slotKeys[i];
-        final ctx = key.currentContext;
-        if (ctx == null) continue;
-        final box = ctx.findRenderObject() as RenderBox?;
-        if (box == null) continue;
-        final pos = box.localToGlobal(Offset.zero);
-        final size = box.size;
-        final rect = Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
-        if (rect.contains(globalPosition)) {
-          foundIdx = i;
-          break;
-        }
-      }
-      if (_highlightedSlotIdx != foundIdx) {
-        setState(() {
-          _highlightedSlotIdx = foundIdx;
-        });
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Listener(
-        onPointerMove: (details) {
-          setState(() {
-            _dragGlobalPosition = details.position;
-          });
-          _updateHighlightSlot(details.position);
-        },
-        onPointerUp: (_) {
-          if (_draggingPieceIdx != null && _highlightedSlotIdx != null) {
-            _onPieceDroppedToBoard(_highlightedSlotIdx!, _draggingPieceIdx!);
-          }
-          setState(() {
-            _dragGlobalPosition = null;
-            _draggingPieceIdx = null;
-            _highlightedSlotIdx = null;
-          });
-        },
         child: SafeArea(
-          child: Stack(
-            children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isLandscape =
-                      constraints.maxWidth > constraints.maxHeight;
-                  return isLandscape
-                      ? Stack(
-                          children: [
-                            // Back button at top left OUTSIDE the tray
-                            Positioned(
-                              top: 24,
-                              left: 24,
-                              child: Material(
-                                color: Colors.white,
-                                elevation: 8,
-                                shape: const CircleBorder(),
-                                child: InkWell(
-                                  customBorder: const CircleBorder(),
-                                  onTap: () => Navigator.of(context).pop(),
-                                  child: Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.10),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Always use Row: board (expanded) + tray (right)
+              return Stack(
+                children: [
+                  // Back button at top left OUTSIDE the tray
+                  Positioned(
+                    top: 24,
+                    left: 24,
+                    child: Material(
+                      color: Colors.white,
+                      elevation: 8,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.10),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.arrow_back,
+                                color: Colors.orange, size: 28),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Board centered and maximized
+                      Expanded(
+                        child: Center(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              if (_imageAspectRatio == null) {
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              }
+                              // Maximize board size to all available height and width
+                              const double trayWidth = 200;
+                              const double trayMargin = 16;
+                              double availableWidth = constraints.maxWidth;
+                              double availableHeight = constraints.maxHeight;
+                              double boardWidth = availableWidth;
+                              double boardHeight =
+                                  boardWidth / _imageAspectRatio!;
+                              if (boardHeight > availableHeight) {
+                                boardHeight = availableHeight;
+                                boardWidth =
+                                    boardHeight * _imageAspectRatio!;
+                              }
+                              return SizedBox(
+                                width: boardWidth,
+                                height: boardHeight,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Stack(
+                                    children: [
+                                      const Positioned.fill(
+                                          child:
+                                              AnimatedBubblesBackground()),
+                                      Positioned.fill(
+                                        child: Opacity(
+                                          opacity: 0.7,
+                                          child: Image(
+                                            image: _imageProvider,
+                                            fit: BoxFit.fill,
+                                          ),
                                         ),
-                                      ],
-                                    ),
-                                    child: const Center(
-                                      child: Icon(Icons.arrow_back,
-                                          color: Colors.orange, size: 28),
-                                    ),
+                                      ),
+                                      Positioned.fill(
+                                        child: PuzzleBoardWithTray(
+                                          imageProvider: _imageProvider,
+                                          rows: rows,
+                                          cols: cols,
+                                          boardState: boardState,
+                                          draggingIndex: draggingIndex,
+                                          onPieceDropped:
+                                              _onPieceDroppedToBoard,
+                                          onPieceRemoved: (slotIdx) {
+                                            if (boardState[slotIdx] != null) {
+                                              _onPieceRemovedFromBoard(
+                                                  slotIdx,
+                                                  boardState[slotIdx]!);
+                                            }
+                                          },
+                                          onStartDraggingFromTray: (index) {
+                                            setState(() {
+                                              draggingIndex = index;
+                                              _draggingPieceIdx = index;
+                                            });
+                                          },
+                                          onEndDragging: () {
+                                            setState(() {
+                                              draggingIndex = null;
+                                              _draggingPieceIdx = null;
+                                            });
+                                          },
+                                          slotKeys: {
+                                            for (var i = 0;
+                                                i < _slotKeys.length;
+                                                i++)
+                                              i: _slotKeys[i]
+                                          },
+                                          dragGlobalPosition:
+                                              _dragGlobalPosition,
+                                          draggingPieceIdx: _draggingPieceIdx,
+                                          highlightedIndex: _highlightedSlotIdx,
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 0,
+                                        right: 0,
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.refresh,
+                                                color: Colors.orange,
+                                                size: 32),
+                                            onPressed: _resetGame,
+                                            tooltip: 'Reset',
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                            ),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Board centered and maximized
-                                Expanded(
-                                  child: Center(
-                                    child: LayoutBuilder(
-                                      builder: (context, constraints) {
-                                        if (_imageAspectRatio == null) {
-                                          return const Center(
-                                              child:
-                                                  CircularProgressIndicator());
-                                        }
-                                        // Maximize board size to all available height and width
-                                        double availableWidth =
-                                            constraints.maxWidth;
-                                        double availableHeight =
-                                            constraints.maxHeight;
-                                        double boardWidth = availableWidth;
-                                        double boardHeight =
-                                            boardWidth / _imageAspectRatio!;
-                                        if (boardHeight > availableHeight) {
-                                          boardHeight = availableHeight;
-                                          boardWidth =
-                                              boardHeight * _imageAspectRatio!;
-                                        }
-                                        return SizedBox(
-                                          width: boardWidth,
-                                          height: boardHeight,
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                            child: Stack(
-                                              children: [
-                                                const Positioned.fill(
-                                                    child:
-                                                        AnimatedBubblesBackground()),
-                                                Positioned.fill(
-                                                  child: Opacity(
-                                                    opacity: 0.7,
-                                                    child: Image(
-                                                      image: _imageProvider,
-                                                      fit: BoxFit.fill,
-                                                    ),
-                                                  ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      // Tray pinned to right (background and tray pieces)
+                      Builder(
+                        builder: (context) {
+                          // Calculate board piece size to match tray pieces
+                          double trayWidth = 200;
+                          double availableWidth = constraints.maxWidth;
+                          double availableHeight = constraints.maxHeight;
+                          double boardWidth = availableWidth;
+                          double boardHeight =
+                              boardWidth / _imageAspectRatio!;
+                          if (boardHeight > availableHeight) {
+                            boardHeight = availableHeight;
+                            boardWidth = boardHeight * _imageAspectRatio!;
+                          }
+                          double pieceSize = boardWidth / cols;
+                          return DragTarget<int>(
+                            onWillAccept: (data) {
+                              // Accept if the piece is not already in the tray
+                              return !pieceOrder.contains(data);
+                            },
+                            onAccept: (pieceIdx) {
+                              // Remove from board and add to tray
+                              int fromIdx = boardState.indexOf(pieceIdx);
+                              if (fromIdx != -1) {
+                                setState(() {
+                                  boardState[fromIdx] = null;
+                                  if (!pieceOrder.contains(pieceIdx)) {
+                                    pieceOrder.add(pieceIdx);
+                                  }
+                                  widget.onProgress?.call(
+                                    boardState.where((e) => e != null).length /
+                                        (rows * cols),
+                                    boardState: boardState,
+                                    pieceOrder: pieceOrder,
+                                  );
+                                });
+                              }
+                            },
+                            builder: (context, candidateData, rejectedData) {
+                              return Container(
+                                width: trayWidth,
+                                margin: const EdgeInsets.only(
+                                    top: 18, bottom: 18, right: 16),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.orange.shade200,
+                                      Colors.yellow.shade100,
+                                      Colors.orange.shade100,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(32),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.deepOrange.withOpacity(0.18),
+                                      blurRadius: 24,
+                                      spreadRadius: 4,
+                                      offset: Offset(0, 8),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    color: Colors.deepOrange,
+                                    width: 4,
+                                  ),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: Opacity(
+                                        opacity: 0.10,
+                                        child: Image.asset(
+                                          'assets/puzzle/tray_pattern.png',
+                                          fit: BoxFit.cover,
+                                          repeat: ImageRepeat.repeat,
+                                          errorBuilder: (_, __, ___) =>
+                                              SizedBox.shrink(),
+                                        ),
+                                      ),
+                                    ),
+                                    // Tray pieces list
+                                    Positioned.fill(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 8),
+                                        child: pieceOrder.isEmpty
+                                            ? Center(
+                                                child: Text(
+                                                  'No pieces',
+                                                  style: TextStyle(
+                                                      color: Colors.orange
+                                                          .shade700,
+                                                      fontWeight:
+                                                          FontWeight.bold),
                                                 ),
-                                                Positioned.fill(
-                                                  child: PuzzleBoardWithTray(
-                                                    imageProvider:
-                                                        _imageProvider,
-                                                    rows: rows,
-                                                    cols: cols,
-                                                    boardState: boardState,
-                                                    draggingIndex:
-                                                        draggingIndex,
-                                                    onPieceDropped:
-                                                        _onPieceDroppedToBoard,
-                                                    onPieceRemoved: (slotIdx) {
-                                                      if (boardState[slotIdx] !=
-                                                          null) {
-                                                        _onPieceRemovedFromBoard(
-                                                            slotIdx,
-                                                            boardState[
-                                                                slotIdx]!);
-                                                      }
-                                                    },
-                                                    onStartDraggingFromTray:
-                                                        (index) {
+                                              )
+                                            : ListView.builder(
+                                                itemCount: pieceOrder.length,
+                                                primary: false,
+                                                physics:
+                                                    const ClampingScrollPhysics(),
+                                                itemBuilder:
+                                                    (context, trayIdx) {
+                                                  final pieceIdx =
+                                                      pieceOrder[trayIdx];
+                                                  return Draggable<int>(
+                                                    data: pieceIdx, // Pass the actual piece index
+                                                    feedback: Material(
+                                                      color: Colors.transparent,
+                                                      child: SizedBox(
+                                                        width: pieceSize,
+                                                        height: pieceSize,
+                                                        child: PuzzlePiece(
+                                                          imageProvider:
+                                                              _imageProvider,
+                                                          rows: rows,
+                                                          cols: cols,
+                                                          row: pieceIdx ~/
+                                                              cols,
+                                                          col: pieceIdx %
+                                                              cols,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    childWhenDragging: Opacity(
+                                                      opacity: 0.3,
+                                                      child: SizedBox(
+                                                        width: pieceSize,
+                                                        height: pieceSize,
+                                                        child: PuzzlePiece(
+                                                          imageProvider:
+                                                              _imageProvider,
+                                                          rows: rows,
+                                                          cols: cols,
+                                                          row: pieceIdx ~/
+                                                              cols,
+                                                          col: pieceIdx %
+                                                              cols,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    onDragStarted: () {
                                                       setState(() {
-                                                        draggingIndex = index;
+                                                        draggingIndex =
+                                                            pieceIdx;
                                                         _draggingPieceIdx =
-                                                            index;
+                                                            pieceIdx;
                                                       });
                                                     },
-                                                    onEndDragging: () {
+                                                    onDraggableCanceled:
+                                                        (_, __) {
                                                       setState(() {
                                                         draggingIndex = null;
                                                         _draggingPieceIdx =
                                                             null;
                                                       });
                                                     },
-                                                    slotKeys: {
-                                                      for (var i = 0;
-                                                          i < _slotKeys.length;
-                                                          i++)
-                                                        i: _slotKeys[i]
+                                                    onDragEnd: (_) {
+                                                      setState(() {
+                                                        draggingIndex = null;
+                                                        _draggingPieceIdx =
+                                                            null;
+                                                      });
                                                     },
-                                                    dragGlobalPosition:
-                                                        _dragGlobalPosition,
-                                                    draggingPieceIdx:
-                                                        _draggingPieceIdx,
-                                                    highlightedIndex:
-                                                        _highlightedSlotIdx,
-                                                  ),
-                                                ),
-                                                Positioned(
-                                                  top: 0,
-                                                  right: 0,
-                                                  child: Material(
-                                                    color: Colors.transparent,
-                                                    child: IconButton(
-                                                      icon: const Icon(
-                                                          Icons.refresh,
-                                                          color: Colors.orange,
-                                                          size: 32),
-                                                      onPressed: _resetGame,
-                                                      tooltip: 'Reset',
+                                                    child: Container(
+                                                      margin: const EdgeInsets
+                                                          .symmetric(
+                                                              vertical: 6),
+                                                      width: pieceSize,
+                                                      height: pieceSize,
+                                                      child: PuzzlePiece(
+                                                        imageProvider:
+                                                            _imageProvider,
+                                                        rows: rows,
+                                                        cols: cols,
+                                                        row: pieceIdx ~/
+                                                            cols,
+                                                        col: pieceIdx %
+                                                            cols,
+                                                      ),
                                                     ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                                  );
+                                                },
+                                              ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                // Tray pinned to right (background and tray pieces)
-                                Builder(
-                                  builder: (context) {
-                                    // Calculate board piece size to match tray pieces
-                                    // Make tray and pieces smaller for kid-friendly look
-                                    double trayWidth = 120; // was 200
-                                    double availableWidth =
-                                        constraints.maxWidth;
-                                    double availableHeight =
-                                        constraints.maxHeight;
-                                    double boardWidth = availableWidth;
-                                    double boardHeight =
-                                        boardWidth / _imageAspectRatio!;
-                                    if (boardHeight > availableHeight) {
-                                      boardHeight = availableHeight;
-                                      boardWidth =
-                                          boardHeight * _imageAspectRatio!;
-                                    }
-                                    // Reduce piece size multiplier so tray pieces appear small
-                                    double pieceSize =
-                                        (boardWidth / cols) * 0.45; // was 1.0
-                                    return DragTarget<int>(
-                                      onWillAccept: (data) {
-                                        // Accept if the piece is not already in the tray
-                                        return !pieceOrder.contains(data);
-                                      },
-                                      onAccept: (pieceIdx) {
-                                        // Remove from board and add to tray
-                                        int fromIdx =
-                                            boardState.indexOf(pieceIdx);
-                                        if (fromIdx != -1) {
-                                          setState(() {
-                                            boardState[fromIdx] = null;
-                                            if (!pieceOrder
-                                                .contains(pieceIdx)) {
-                                              pieceOrder.add(pieceIdx);
-                                            }
-                                            widget.onProgress?.call(
-                                              boardState
-                                                      .where((e) => e != null)
-                                                      .length /
-                                                  (rows * cols),
-                                              boardState: boardState,
-                                              pieceOrder: pieceOrder,
-                                            );
-                                          });
-                                        }
-                                      },
-                                      builder: (context, candidateData,
-                                          rejectedData) {
-                                        return Container(
-                                          width: trayWidth,
-                                          margin: const EdgeInsets.only(
-                                              top: 18, bottom: 18, right: 16),
+                                    // Optional: highlight tray when dragging over
+                                    if (candidateData.isNotEmpty)
+                                      Positioned.fill(
+                                        child: Container(
                                           decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                Colors.orange.shade200,
-                                                Colors.yellow.shade100,
-                                                Colors.orange.shade100,
-                                              ],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                            ),
+                                            color: Colors.orange
+                                                .withOpacity(0.12),
                                             borderRadius:
                                                 BorderRadius.circular(32),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.deepOrange
-                                                    .withOpacity(0.18),
-                                                blurRadius: 24,
-                                                spreadRadius: 4,
-                                                offset: Offset(0, 8),
-                                              ),
-                                            ],
                                             border: Border.all(
-                                              color: Colors.deepOrange,
-                                              width: 4,
-                                            ),
+                                                color: Colors.deepOrange,
+                                                width: 4),
                                           ),
-                                          child: Stack(
-                                            children: [
-                                              Positioned.fill(
-                                                child: Opacity(
-                                                  opacity: 0.10,
-                                                  child: Image.asset(
-                                                    'assets/puzzle/tray_pattern.png',
-                                                    fit: BoxFit.cover,
-                                                    repeat: ImageRepeat.repeat,
-                                                    errorBuilder:
-                                                        (_, __, ___) =>
-                                                            SizedBox.shrink(),
-                                                  ),
-                                                ),
-                                              ),
-                                              // Tray pieces list
-                                              Positioned.fill(
-                                                child: Padding(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 8),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
                                                   child: pieceOrder.isEmpty
                                                       ? Center(
                                                           child: Text(
@@ -1128,18 +1064,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                         );
                 },
               ),
-              // Celebration overlay shown when puzzle completed
-              if (_showCelebration)
-                Positioned.fill(
-                  child: CelebrationOverlay(
-                    show: true,
-                    onComplete: () {
-                      setState(() {
-                        _showCelebration = false;
-                      });
-                    },
-                  ),
-                ),
             ],
           ),
         ),
