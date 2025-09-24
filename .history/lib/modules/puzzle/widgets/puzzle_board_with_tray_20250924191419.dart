@@ -188,8 +188,8 @@ class _BoardGridPainter extends CustomPainter {
   _BoardGridPainter(
       {required this.rows,
       required this.cols,
-      this.color = const Color(0x77000000),
-      this.strokeWidth = 1.6});
+  this.color = const Color(0x77000000),
+  this.strokeWidth = 1.6});
 
   @override
   void paint(Canvas canvas, Size size) {

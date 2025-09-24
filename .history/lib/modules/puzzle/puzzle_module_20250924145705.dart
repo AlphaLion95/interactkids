@@ -855,14 +855,12 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                     }
                                     // Reduce piece size multiplier so tray pieces appear small
                                     // Use a rectangular shape: width slightly wider than height
-                                    double base = (boardWidth / cols);
-                                    // Cap the tray piece width so for small grids (3x3)
-                                    // the tray pieces remain rectangular rather than near-square.
-                                    double maxTrayPieceWidth = trayWidth * 0.75;
-                                    double pieceWidth = math.min(
-                                        base * 0.50, maxTrayPieceWidth);
-                                    double pieceHeight = base *
-                                        0.36; // shorter to make rectangle
+                  double base = (boardWidth / cols);
+                  // Cap the tray piece width so for small grids (3x3)
+                  // the tray pieces remain rectangular rather than near-square.
+                  double maxTrayPieceWidth = trayWidth * 0.75;
+                  double pieceWidth = math.min(base * 0.50, maxTrayPieceWidth);
+                  double pieceHeight = base * 0.36; // shorter to make rectangle
                                     return DragTarget<int>(
                                       onWillAccept: (data) {
                                         // Accept if the piece is not already in the tray

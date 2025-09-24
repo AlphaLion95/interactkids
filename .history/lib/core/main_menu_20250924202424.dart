@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../../modules/puzzle/puzzle_module.dart';
-import '../../modules/matching/letters_to_letters/matching_module.dart';
+import '../../modules/matching/letters/matching_module.dart';
 import '../../modules/reading/reading_module.dart';
 import '../../modules/writing/writing_module.dart';
 import '../../modules/painting/painting_module.dart';

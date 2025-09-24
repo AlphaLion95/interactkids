@@ -7,7 +7,6 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -854,15 +853,8 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                           boardHeight * _imageAspectRatio!;
                                     }
                                     // Reduce piece size multiplier so tray pieces appear small
-                                    // Use a rectangular shape: width slightly wider than height
-                                    double base = (boardWidth / cols);
-                                    // Cap the tray piece width so for small grids (3x3)
-                                    // the tray pieces remain rectangular rather than near-square.
-                                    double maxTrayPieceWidth = trayWidth * 0.75;
-                                    double pieceWidth = math.min(
-                                        base * 0.50, maxTrayPieceWidth);
-                                    double pieceHeight = base *
-                                        0.36; // shorter to make rectangle
+                                    double pieceSize =
+                                        (boardWidth / cols) * 0.45; // was 1.0
                                     return DragTarget<int>(
                                       onWillAccept: (data) {
                                         // Accept if the piece is not already in the tray
@@ -977,9 +969,9 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                                                     .transparent,
                                                                 child: SizedBox(
                                                                   width:
-                                                                      pieceWidth,
+                                                                      pieceSize,
                                                                   height:
-                                                                      pieceHeight,
+                                                                      pieceSize,
                                                                   child:
                                                                       PuzzlePiece(
                                                                     imageProvider:
@@ -998,9 +990,9 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                                                 opacity: 0.3,
                                                                 child: SizedBox(
                                                                   width:
-                                                                      pieceWidth,
+                                                                      pieceSize,
                                                                   height:
-                                                                      pieceHeight,
+                                                                      pieceSize,
                                                                   child:
                                                                       PuzzlePiece(
                                                                     imageProvider:
@@ -1046,9 +1038,9 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                                                                     vertical:
                                                                         6),
                                                                 width:
-                                                                    pieceWidth,
+                                                                    pieceSize,
                                                                 height:
-                                                                    pieceHeight,
+                                                                    pieceSize,
                                                                 child:
                                                                     PuzzlePiece(
                                                                   imageProvider:
@@ -1114,27 +1106,6 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
                     },
                   ),
                 ),
-              // Always-on top back button for gameplay (renders after overlays)
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Material(
-                  color: Colors.white,
-                  elevation: 10,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () => Navigator.of(context).maybePop(),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.arrow_back,
-                          color: Colors.orange, size: 28),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),

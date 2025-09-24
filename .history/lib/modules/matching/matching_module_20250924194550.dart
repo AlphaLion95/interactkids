@@ -1,8 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:interactkids/widgets/animated_bubbles_background.dart';
-import 'matching_game_base.dart';
-import 'matching_models.dart';
+import 'package:interactkids/modules/matching/letters/letters_screen.dart';
+import 'package:interactkids/modules/matching/pictures/pictures_screen.dart';
+import 'package:interactkids/modules/matching/words_to_pictures/words_to_pictures_screen.dart';
+import 'package:interactkids/modules/matching/words_to_words/words_to_words_screen.dart';
 
 class MatchingScreen extends StatelessWidget {
   const MatchingScreen({super.key});
@@ -31,9 +33,18 @@ class MatchingScreen extends StatelessWidget {
             context,
             MaterialPageRoute(builder: (_) => const MatchingLettersScreen()),
           ),
-      () {}, // TODO: MatchingPicturesScreen
-      () {}, // TODO: MatchingWordsToPicturesScreen
-      () {}, // TODO: MatchingWordsToWordsScreen
+      () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MatchingPicturesScreen()),
+          ),
+      () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MatchingWordsToPicturesScreen()),
+          ),
+      () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MatchingWordsToWordsScreen()),
+          ),
     ];
     return Scaffold(
       backgroundColor: const Color(0xFFF7F6FF),
@@ -202,34 +213,4 @@ class _AnimatedMatchingTypeButtonState
   }
 }
 
-class MatchingLettersScreen extends StatelessWidget {
-  const MatchingLettersScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Generate all alphabet pairs: A-a, B-b, ..., Z-z
-    final pairs = List.generate(26, (i) {
-      final upper = String.fromCharCode(65 + i); // 'A'..'Z'
-      final lower = String.fromCharCode(97 + i); // 'a'..'z'
-      return MatchingPair(left: upper, right: lower);
-    });
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F6FF),
-      appBar: AppBar(
-        title: const Text('Match the Letters',
-            style: TextStyle(fontFamily: 'Nunito')),
-        backgroundColor: Colors.blue.shade300,
-        elevation: 0,
-      ),
-      body: Stack(
-        children: [
-          const Positioned.fill(child: AnimatedBubblesBackground()),
-          MatchingGameBase(
-            mode: MatchingLettersMode(pairs),
-            title: '',
-          ),
-        ],
-      ),
-    );
-  }
-}
+// Individual game type screens live under their respective folders.
