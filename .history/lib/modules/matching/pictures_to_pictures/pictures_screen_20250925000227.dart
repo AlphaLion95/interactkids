@@ -14,6 +14,7 @@ class MatchingPicturesScreen extends StatefulWidget {
 
 class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
   String _selectedCategory = 'Fruits';
+  bool _isPlaying = true;
 
   @override
   void initState() {
@@ -71,9 +72,33 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     for (var i = 0; i < items.length; i++) {
       visuals['$_selectedCategory-$i'] = items[i];
     }
-    return GameExitGuard(
+    return WillPopScope(
+      onWillPop: () async {
+        if (_isPlaying) {
+          setState(() => _isPlaying = false);
+          final leave = await showDialog<bool>(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Pause'),
+              content: const Text('Do you want to quit the game?'),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Resume')),
+                TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Quit')),
+              ],
+            ),
+          );
+          if (leave == true) return true;
+          setState(() => _isPlaying = true);
+          return false;
+        }
+        return true;
+      },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF7F6FF),
+          return GameExitGuard(
         appBar: AppBar(
           title: const Text('Match the Pictures',
               style: TextStyle(fontFamily: 'Nunito')),

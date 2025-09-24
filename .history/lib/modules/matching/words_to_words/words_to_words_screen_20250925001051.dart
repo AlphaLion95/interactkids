@@ -32,21 +32,22 @@ class _MatchingWordsToWordsScreenState
     final pairs = <MatchingPair>[];
     return GameExitGuard(
       child: Scaffold(
-        backgroundColor: const Color(0xFFF7F6FF),
-        appBar: AppBar(
-          title: const Text('Words to Words',
-              style: TextStyle(fontFamily: 'Nunito')),
-          backgroundColor: Colors.purple.shade300,
-          elevation: 0,
-        ),
-        body: Stack(
-          children: [
-            const Positioned.fill(child: AnimatedBubblesBackground()),
-            MatchingGameBase(
-              mode: MatchingWordsToWordsMode(pairs),
-              title: '',
-            ),
-          ],
+          backgroundColor: const Color(0xFFF7F6FF),
+          appBar: AppBar(
+            title: const Text('Words to Words',
+                style: TextStyle(fontFamily: 'Nunito')),
+            backgroundColor: Colors.purple.shade300,
+            elevation: 0,
+          ),
+          body: Stack(
+            children: [
+              const Positioned.fill(child: AnimatedBubblesBackground()),
+              MatchingGameBase(
+                mode: MatchingWordsToWordsMode(pairs),
+                title: '',
+              ),
+            ],
+          ),
         ),
       ),
     );

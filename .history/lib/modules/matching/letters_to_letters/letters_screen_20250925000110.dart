@@ -14,6 +14,8 @@ class MatchingLettersScreen extends StatefulWidget {
 }
 
 class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
+  bool _isPlaying = true;
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +30,26 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
     super.dispose();
   }
 
+  Future<bool> _onWillPop() async {
+    if (_isPlaying) {
+      setState(() => _isPlaying = false);
+      final leave = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Pause'),
+          content: const Text('Do you want to quit the game?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Resume')),
+            TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Quit')),
+          ],
+        ),
+      );
+    }
+    return true;
   // Back navigation handled by GameExitGuard
 
   @override

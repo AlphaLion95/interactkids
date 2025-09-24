@@ -14,6 +14,8 @@ class MatchingLettersScreen extends StatefulWidget {
 }
 
 class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
+  bool _isPlaying = true;
+
   @override
   void initState() {
     super.initState();

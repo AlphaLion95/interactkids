@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../../../widgets/navigation_helpers.dart';
+import '../../widgets/navigation_helpers.dart';
 import 'package:interactkids/widgets/animated_bubbles_background.dart';
 import 'package:interactkids/modules/matching/letters_to_letters/letters_screen.dart';
 import 'package:interactkids/modules/matching/pictures_to_pictures/pictures_screen.dart';
@@ -31,10 +31,10 @@ class MatchingScreen extends StatelessWidget {
     ];
     // Use pushGameScreen so each game screen is wrapped with GameExitGuard
     final onTaps = [
-      () => pushGameScreen(context, const MatchingLettersScreen()),
-      () => pushGameScreen(context, const MatchingPicturesScreen()),
-      () => pushGameScreen(context, const MatchingWordsToPicturesScreen()),
-      () => pushGameScreen(context, const MatchingWordsToWordsScreen()),
+  () => pushGameScreen(context, const MatchingLettersScreen()),
+  () => pushGameScreen(context, const MatchingPicturesScreen()),
+  () => pushGameScreen(context, const MatchingWordsToPicturesScreen()),
+  () => pushGameScreen(context, const MatchingWordsToWordsScreen()),
     ];
     return Scaffold(
       backgroundColor: const Color(0xFFF7F6FF),

@@ -14,6 +14,7 @@ class MatchingPicturesScreen extends StatefulWidget {
 
 class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
   String _selectedCategory = 'Fruits';
+  bool _isPlaying = true;
 
   @override
   void initState() {

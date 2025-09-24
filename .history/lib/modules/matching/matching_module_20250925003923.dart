@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../../../widgets/navigation_helpers.dart';
+import '../../widgets/navigation_helpers.dart';
 import 'package:interactkids/widgets/animated_bubbles_background.dart';
 import 'package:interactkids/modules/matching/letters_to_letters/letters_screen.dart';
 import 'package:interactkids/modules/matching/pictures_to_pictures/pictures_screen.dart';

@@ -56,9 +56,8 @@ class PuzzleTypeScreen extends StatelessWidget {
                               type: type,
                               height: buttonHeight,
                               onTap: () {
-                                pushGameScreen(
-                                    context, PuzzleLevelScreen(type: type));
-                              },
+                                  pushGameScreen(context, PuzzleLevelScreen(type: type));
+                                },
                             ),
                         ],
                       );

@@ -29,12 +29,25 @@ class MatchingScreen extends StatelessWidget {
       'Words to Pictures',
       'Words to Words',
     ];
-    // Use pushGameScreen so each game screen is wrapped with GameExitGuard
     final onTaps = [
-      () => pushGameScreen(context, const MatchingLettersScreen()),
-      () => pushGameScreen(context, const MatchingPicturesScreen()),
-      () => pushGameScreen(context, const MatchingWordsToPicturesScreen()),
-      () => pushGameScreen(context, const MatchingWordsToWordsScreen()),
+      () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MatchingLettersScreen()),
+          ),
+      () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MatchingPicturesScreen()),
+          ),
+      () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => const MatchingWordsToPicturesScreen()),
+          ),
+      () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => const MatchingWordsToWordsScreen()),
+          ),
     ];
     return Scaffold(
       backgroundColor: const Color(0xFFF7F6FF),

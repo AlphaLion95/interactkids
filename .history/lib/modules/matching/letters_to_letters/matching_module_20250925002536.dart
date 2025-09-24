@@ -31,10 +31,10 @@ class MatchingScreen extends StatelessWidget {
     ];
     // Use pushGameScreen so each game screen is wrapped with GameExitGuard
     final onTaps = [
-      () => pushGameScreen(context, const MatchingLettersScreen()),
-      () => pushGameScreen(context, const MatchingPicturesScreen()),
-      () => pushGameScreen(context, const MatchingWordsToPicturesScreen()),
-      () => pushGameScreen(context, const MatchingWordsToWordsScreen()),
+  () => pushGameScreen(context, const MatchingLettersScreen()),
+  () => pushGameScreen(context, const MatchingPicturesScreen()),
+  () => pushGameScreen(context, const MatchingWordsToPicturesScreen()),
+  () => pushGameScreen(context, const MatchingWordsToWordsScreen()),
     ];
     return Scaffold(
       backgroundColor: const Color(0xFFF7F6FF),
