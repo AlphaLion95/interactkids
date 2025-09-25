@@ -1,1 +1,0 @@
-// Plants module stub

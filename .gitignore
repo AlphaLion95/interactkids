@@ -22,3 +22,5 @@ ios/Pods/
 *.log
 .DS_Store
 local.properties
+
+.history/

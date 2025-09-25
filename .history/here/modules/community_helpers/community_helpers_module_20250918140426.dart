@@ -1,1 +1,0 @@
-// Community Helpers module stub

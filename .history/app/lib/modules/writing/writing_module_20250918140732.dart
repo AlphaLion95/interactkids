@@ -1,1 +1,0 @@
-// Writing module stub
