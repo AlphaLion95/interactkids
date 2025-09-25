@@ -6,6 +6,7 @@ import 'package:interactkids/modules/matching/letters_to_letters/matching_game_b
 import 'package:interactkids/modules/matching/letters_to_letters/matching_models.dart';
 import 'dart:math' as math;
 import 'pictures_mode.dart';
+import 'package:interactkids/widgets/bouncing_button.dart';
 
 // Small decorative widgets used by the pictures screen to create
 // non-rectangular, varied visuals (triangles, popsicles, cones, etc.)
@@ -36,8 +37,10 @@ class _TriangleBadge extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-              colors: [color.withOpacity(0.9), color.withOpacity(0.6)]),
+          gradient: LinearGradient(colors: [
+            color.withAlpha((0.9 * 255).round()),
+            color.withAlpha((0.6 * 255).round())
+          ]),
           boxShadow: [
             BoxShadow(
                 color: color.withAlpha(60),
@@ -46,6 +49,61 @@ class _TriangleBadge extends StatelessWidget {
           ],
         ),
         child: null,
+      ),
+    );
+  }
+}
+
+// Themed, animated category card used on the initial selection screen.
+class _CategoryCard extends StatefulWidget {
+  final String label;
+  final Color color;
+  final Widget visual;
+  final VoidCallback onTap;
+  const _CategoryCard(
+      {required this.label,
+      required this.color,
+      required this.visual,
+      required this.onTap});
+
+  @override
+  State<_CategoryCard> createState() => _CategoryCardState();
+}
+
+class _CategoryCardState extends State<_CategoryCard> {
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBouncingButton(
+      onTap: widget.onTap,
+      delay: (widget.label.hashCode % 3) * 120,
+      width: 160,
+      height: 160,
+      child: Container(
+        width: 160,
+        height: 160,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [
+            widget.color.withAlpha((0.98 * 255).round()),
+            widget.color
+          ]),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+                color: widget.color.withAlpha(60),
+                blurRadius: 12,
+                offset: const Offset(0, 6))
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(width: 84, height: 84, child: widget.visual),
+            const SizedBox(height: 10),
+            Text(widget.label,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
     );
   }
@@ -85,52 +143,59 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
   static final Map<String, Map<String, List<Widget>>> _categoryWidgets = {
     'Fruits': {
       'easy': [
-        const Icon(Icons.apple, size: 100, color: Colors.red),
-        const Icon(Icons.local_pizza, size: 100, color: Colors.deepOrange),
-        // additional fruit-like visuals for variety: solid shapes only (no attachments)
-        // solid orange rounded rect
+        // Large fruit emoji hints (apple, banana)
+        const Center(child: Text('🍎', style: TextStyle(fontSize: 100))),
+        const Center(child: Text('🍌', style: TextStyle(fontSize: 100))),
+        // Fruit-like colored blocks with emoji inside for variety
         Container(
             width: 96,
             height: 72,
             decoration: BoxDecoration(
                 color: Colors.orangeAccent,
-                borderRadius: BorderRadius.circular(12))),
-        // solid red rounded square
+                borderRadius: BorderRadius.circular(12)),
+            child: const Center(
+                child: Text('🥭', style: TextStyle(fontSize: 36)))),
         Container(
             width: 96,
             height: 96,
             decoration: BoxDecoration(
                 color: Colors.redAccent.shade200,
-                borderRadius: BorderRadius.circular(16))),
-        // solid yellow pill
+                borderRadius: BorderRadius.circular(16)),
+            child: const Center(
+                child: Text('🍓', style: TextStyle(fontSize: 36)))),
         Container(
             width: 88,
             height: 56,
             decoration: BoxDecoration(
                 color: Colors.yellow.shade700,
-                borderRadius: BorderRadius.circular(28))),
-        // Solid triangle badge (no inner emoji)
-        const _TriangleBadge(color: Colors.pink, size: 100),
-        // Solid circle (no emoji inside)
+                borderRadius: BorderRadius.circular(28)),
+            child: const Center(
+                child: Text('🍊', style: TextStyle(fontSize: 28)))),
+        // Triangle badge retained but tuned for a fruity color
+        const _TriangleBadge(color: Colors.pinkAccent, size: 100),
+        // Circle with lemon emoji
         Container(
             width: 96,
             height: 96,
-            decoration:
-                const BoxDecoration(color: Colors.yellow, shape: BoxShape.circle)),
+            decoration: const BoxDecoration(
+                color: Colors.yellow, shape: BoxShape.circle),
+            child: const Center(
+                child: Text('🍋', style: TextStyle(fontSize: 36)))),
       ],
       'medium': [
-        const Icon(Icons.star, size: 72, color: Colors.yellow),
-        const Icon(Icons.favorite, size: 72, color: Colors.pink),
+        const Center(child: Text('🍐', style: TextStyle(fontSize: 72))),
+        const Center(child: Text('🍑', style: TextStyle(fontSize: 72))),
       ],
       'hard': [
-        const Icon(Icons.cake, size: 48, color: Colors.brown),
-        // replace icecream icon with a solid blue-grey rounded block
+        const Center(child: Text('🍒', style: TextStyle(fontSize: 48))),
+        // small colored block as a neutral 'fruit hint'
         Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-                color: Colors.blueGrey,
-                borderRadius: BorderRadius.circular(8))),
+                color: Colors.blueGrey, borderRadius: BorderRadius.circular(8)),
+            child: const Center(
+                child: Text('🥝', style: TextStyle(fontSize: 20)))),
       ],
     },
     'Vegetables': {
@@ -164,11 +229,14 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
             color: Colors.green, child: SizedBox(width: 100, height: 100)),
       ],
       'medium': [
-        const ColoredBox(color: Colors.green, child: SizedBox(width: 72, height: 72))
+        const ColoredBox(
+            color: Colors.green, child: SizedBox(width: 72, height: 72))
       ],
       'hard': [
-        const ColoredBox(color: Colors.blue, child: SizedBox(width: 48, height: 48)),
-        const ColoredBox(color: Colors.yellow, child: SizedBox(width: 48, height: 48))
+        const ColoredBox(
+            color: Colors.blue, child: SizedBox(width: 48, height: 48)),
+        const ColoredBox(
+            color: Colors.yellow, child: SizedBox(width: 48, height: 48))
       ],
     },
     'Shapes': {
@@ -346,122 +414,148 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     return GameExitGuard(
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F6FF),
-        appBar: AppBar(
-          leading: _selectedCategory != null
-              ? BackButton(
-                  onPressed: () => setState(() {
-                        _selectedCategory = null;
-                        _selectedDifficulty = null;
-                      }))
-              : null,
-          title: const Text('Match the Pictures',
-              style: TextStyle(fontFamily: 'Nunito')),
-          backgroundColor: Colors.green.shade300,
-          elevation: 0,
-          actions: [
-            IconButton(
-              tooltip: 'Undo last match',
-              icon: const Icon(Icons.undo),
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.maybeOf(context);
-                final undone = await _gameKey.currentState?.undoLastMatch();
-                if (!mounted) return;
-                if (undone == true) {
-                  messenger?.showSnackBar(
-                      const SnackBar(content: Text('Undid last match')));
-                } else {
-                  messenger?.showSnackBar(
-                      const SnackBar(content: Text('Nothing to undo')));
-                }
-              },
-            ),
-            IconButton(
-              tooltip: 'Clear current stroke',
-              icon: const Icon(Icons.brush),
-              onPressed: () {
-                _gameKey.currentState?.clearStroke();
-              },
-            ),
-            IconButton(
-              tooltip: 'Reset progress',
-              icon: const Icon(Icons.refresh),
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.maybeOf(context);
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Reset progress?'),
-                    content: const Text(
-                        'This will clear your progress for this game mode.'),
-                    actions: [
-                      TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(false),
-                          child: const Text('Cancel')),
-                      TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(true),
-                          child: const Text('Reset')),
-                    ],
+        appBar: _selectedCategory == null
+            ? null
+            : AppBar(
+                leading: BackButton(
+                    onPressed: () => setState(() {
+                          _selectedCategory = null;
+                          _selectedDifficulty = null;
+                        })),
+                title: const Text('Match the Pictures',
+                    style: TextStyle(fontFamily: 'Nunito')),
+                backgroundColor: Colors.green.shade300,
+                elevation: 0,
+                actions: [
+                  IconButton(
+                    tooltip: 'Undo last match',
+                    icon: const Icon(Icons.undo),
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.maybeOf(context);
+                      final undone =
+                          await _gameKey.currentState?.undoLastMatch();
+                      if (!mounted) return;
+                      if (undone == true) {
+                        messenger?.showSnackBar(
+                            const SnackBar(content: Text('Undid last match')));
+                      } else {
+                        messenger?.showSnackBar(
+                            const SnackBar(content: Text('Nothing to undo')));
+                      }
+                    },
                   ),
-                );
-                if (!mounted) return;
-                if (confirmed == true) {
-                  await _gameKey.currentState?.resetGame();
-                  if (!mounted) return;
-                  messenger?.showSnackBar(
-                      const SnackBar(content: Text('Progress reset')));
-                }
-              },
-            ),
-          ],
-        ),
+                  IconButton(
+                    tooltip: 'Clear current stroke',
+                    icon: const Icon(Icons.brush),
+                    onPressed: () {
+                      _gameKey.currentState?.clearStroke();
+                    },
+                  ),
+                  IconButton(
+                    tooltip: 'Reset progress',
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.maybeOf(context);
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Reset progress?'),
+                          content: const Text(
+                              'This will clear your progress for this game mode.'),
+                          actions: [
+                            TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text('Cancel')),
+                            TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text('Reset')),
+                          ],
+                        ),
+                      );
+                      if (!mounted) return;
+                      if (confirmed == true) {
+                        await _gameKey.currentState?.resetGame();
+                        if (!mounted) return;
+                        messenger?.showSnackBar(
+                            const SnackBar(content: Text('Progress reset')));
+                      }
+                    },
+                  ),
+                ],
+              ),
         body: Stack(
           children: [
             const Positioned.fill(child: AnimatedBubblesBackground()),
             if (_selectedCategory == null)
               Center(
-                child: Wrap(
-                  spacing: 20,
-                  runSpacing: 20,
-                  alignment: WrapAlignment.center,
-                  children: categories.map((cat) {
-                    return GestureDetector(
-                      onTap: () {
-                        if (_selectedCategory == cat) return;
-                        setState(() {
-                          _selectedCategory = cat;
-                          // Immediately enter gameplay and default to easy
-                          _selectedDifficulty = 'easy';
-                        });
-                        // Reset game after the mode is mounted so progressKey is correct
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _gameKey.currentState?.resetGame();
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        width: 160,
-                        height: 160,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(color: Colors.black12, blurRadius: 12)
-                          ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: categories.map((cat) {
+                      // Provide themed visuals per category
+                      Widget visual;
+                      Color color;
+                      switch (cat) {
+                        case 'Fruits':
+                          color = Colors.orange.shade400;
+                          visual = const Center(
+                              child:
+                                  Text('🍎', style: TextStyle(fontSize: 48)));
+                          break;
+                        case 'Vegetables':
+                          color = Colors.green.shade500;
+                          visual = const Center(
+                              child:
+                                  Text('🥕', style: TextStyle(fontSize: 48)));
+                          break;
+                        case 'Colors':
+                          color = Colors.purple.shade400;
+                          visual = Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Expanded(
+                                  child: ColoredBox(
+                                      color: Colors.red, child: SizedBox())),
+                              SizedBox(width: 4),
+                              Expanded(
+                                  child: ColoredBox(
+                                      color: Colors.green, child: SizedBox())),
+                              SizedBox(width: 4),
+                              Expanded(
+                                  child: ColoredBox(
+                                      color: Colors.blue, child: SizedBox())),
+                            ],
+                          );
+                          break;
+                        case 'Shapes':
+                        default:
+                          color = Colors.indigo.shade400;
+                          visual = Center(
+                              child: Icon(Icons.change_history,
+                                  size: 48, color: Colors.white));
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: _CategoryCard(
+                          label: _displayLabel(cat),
+                          color: color,
+                          visual: visual,
+                          onTap: () {
+                            if (_selectedCategory == cat) return;
+                            setState(() {
+                              _selectedCategory = cat;
+                              _selectedDifficulty = 'easy';
+                            });
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _gameKey.currentState?.resetGame();
+                            });
+                          },
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.category,
-                                size: 48, color: Colors.green.shade400),
-                            const SizedBox(height: 8),
-                            Text(_displayLabel(cat),
-                                style: const TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
               )
             else
@@ -606,6 +700,11 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                                   : 64.0,
                           // unique progress key per category and difficulty so toggling doesn't wipe visuals
                           '${_selectedCategory}_${_selectedDifficulty ?? 'all'}',
+                          // preferred center gap: make more center space for fruits and shapes
+                          (_selectedCategory == 'Fruits' ||
+                                  _selectedCategory == 'Shapes')
+                              ? 160.0
+                              : null,
                         ),
                         title: '',
                       ),

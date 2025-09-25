@@ -4,12 +4,25 @@ import 'package:interactkids/modules/matching/letters_to_letters/matching_models
 class MatchingPicturesMode extends MatchingGameMode {
   final Map<String, Widget>? visuals;
   final double? _preferredCellSize;
+  final double? _preferredCenterGap;
   final String? _progressKeySuffix;
   MatchingPicturesMode(List<MatchingPair> pairs,
-      [this.visuals, double? preferredCellSize, String? progressKeySuffix])
+      [this.visuals,
+      double? preferredCellSize,
+      String? progressKeySuffix,
+      double? preferredCenterGap])
       : _preferredCellSize = preferredCellSize,
+        _preferredCenterGap = preferredCenterGap,
         _progressKeySuffix = progressKeySuffix,
         super(pairs);
+
+  /// If the progressKeySuffix was passed as '<Category>_<difficulty>' then
+  /// this returns the Category part (for layout tweaks in the host UI).
+  String? get category => _progressKeySuffix?.split('_').first;
+
+  /// Optional preferred center gap (pixels) the host UI may use to space
+  /// left/right columns; when null the host decides a default.
+  double? get preferredCenterGap => _preferredCenterGap;
 
   @override
   String get progressKey =>

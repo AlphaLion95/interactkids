@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
 // DragMatchArea: handles freehand strokes and proposes matches via onProposeMatch
-typedef _BuildItem = Widget Function(dynamic item);
+typedef BuildItem = Widget Function(dynamic item);
 
 class _TimedPoint {
   final Offset point;
@@ -12,8 +13,8 @@ class _TimedPoint {
 class DragMatchArea extends StatefulWidget {
   final List<dynamic> leftItems;
   final List<dynamic> rightItems;
-  final _BuildItem buildLeft;
-  final _BuildItem buildRight;
+  final BuildItem buildLeft;
+  final BuildItem buildRight;
 
   /// Called when the user attempts a match (drag finishes or both tapped).
   /// Should return a Future<bool> indicating whether the match is valid.
@@ -22,6 +23,7 @@ class DragMatchArea extends StatefulWidget {
   /// Optional notifier to indicate whether the user is currently drawing.
   /// When true, parent scrollables should disable vertical scroll.
   final ValueNotifier<bool>? isDrawingNotifier;
+  final double? preferredCenterGap;
 
   const DragMatchArea(
       {required Key key,
@@ -30,7 +32,8 @@ class DragMatchArea extends StatefulWidget {
       required this.buildLeft,
       required this.buildRight,
       required this.onProposeMatch,
-      this.isDrawingNotifier})
+      this.isDrawingNotifier,
+      this.preferredCenterGap})
       : super(key: key);
 
   @override
@@ -39,6 +42,8 @@ class DragMatchArea extends StatefulWidget {
 
 class _DragMatchAreaState extends State<DragMatchArea> {
   List<_TimedPoint> _points = [];
+  final ValueNotifier<bool> _fallbackDrawingNotifier =
+      ValueNotifier<bool>(false);
   bool _draggingFromLeft = true;
   dynamic _hoverTarget;
 
@@ -95,19 +100,24 @@ class _DragMatchAreaState extends State<DragMatchArea> {
   }
 
   void _handlePanStart(Offset globalPos) {
-    // Determine if the touch started within side margins; if so, don't treat
-    // it as a drawing gesture (allow scroll). Otherwise, mark drawing active.
+    // Determine if the touch started within the narrow side margins; if so,
+    // treat it as a scroll intent (disable drawing). Otherwise, enable drawing
+    // so the middle area handles pen input. Use a fixed cap so very large
+    // screens don't make the margin too wide.
     final local = _toLocal(globalPos);
     final width = (context.findRenderObject() as RenderBox?)?.size.width ??
         MediaQuery.of(context).size.width;
-    final marginPx = width * 0.12; // 12% margins on each side
-    final startedInMargin = local == null
+    // Margin is 12% of width but at most 80 pixels so it's strictly the edge.
+    final marginPx = math.min(width * 0.12, 80.0);
+    final startedInSideMargin = local == null
         ? false
         : (local.dx <= marginPx || local.dx >= (width - marginPx));
 
     try {
       if (widget.isDrawingNotifier != null) {
-        widget.isDrawingNotifier!.value = !startedInMargin;
+        // If started in the side margin, allow scrolling (disable drawing).
+        // If started in center, enable drawing and prevent scroll.
+        widget.isDrawingNotifier!.value = !startedInSideMargin;
       }
     } catch (_) {}
 
@@ -130,7 +140,9 @@ class _DragMatchAreaState extends State<DragMatchArea> {
       }
 
       // update hover target depending on last point
-      const threshold = 32.0;
+      // Slightly more forgiving hover threshold so quick or light strokes
+      // still register when near targets.
+      const threshold = 40.0;
       _hoverTarget = null;
       if (_points.isEmpty) return;
       final last = _points.last;
@@ -172,15 +184,10 @@ class _DragMatchAreaState extends State<DragMatchArea> {
       });
       return;
     }
-    if (_points.length < 3) {
-      setState(() {
-        _points = [];
-        _hoverTarget = null;
-      });
-      return;
-    }
-
-    const threshold = 36.0;
+    // Allow even short/quick strokes to be considered. Use a slightly
+    // larger threshold for matching so light strokes that don't generate
+    // many sampled points still register.
+    const threshold = 48.0;
     int? firstLeftIndex;
     int? firstRightIndex;
     dynamic firstLeftKey;
@@ -218,7 +225,57 @@ class _DragMatchAreaState extends State<DragMatchArea> {
         await _attemptProposedMatch(firstLeftKey, firstRightKey);
       }
     } else {
-      // endpoint heuristics omitted for brevity
+      // Fallback: if the stroke didn't clearly pass over both sides via
+      // sampled points, check the stroke endpoints (first and last sample)
+      // against item centers using a more forgiving radius. This helps
+      // quick taps or short strokes register as matches.
+      final firstPoint = _points.first.point;
+      final lastPoint = _points.last.point;
+      const endpointRadius = 64.0;
+      dynamic leftCandidate;
+      dynamic rightCandidate;
+
+      // Check first endpoint against left items and last endpoint against right items
+      for (final entry in _leftKeys.entries) {
+        final c = _toLocal(_centerOfKey(entry.value));
+        if (c == null) continue;
+        if ((c - firstPoint).distance <= endpointRadius) {
+          leftCandidate = entry.key;
+          break;
+        }
+      }
+      for (final entry in _rightKeys.entries) {
+        final c = _toLocal(_centerOfKey(entry.value));
+        if (c == null) continue;
+        if ((c - lastPoint).distance <= endpointRadius) {
+          rightCandidate = entry.key;
+          break;
+        }
+      }
+
+      // If not found, try the opposite endpoints (in case drag direction was reversed)
+      if (leftCandidate == null || rightCandidate == null) {
+        for (final entry in _leftKeys.entries) {
+          final c = _toLocal(_centerOfKey(entry.value));
+          if (c == null) continue;
+          if ((c - lastPoint).distance <= endpointRadius) {
+            leftCandidate = entry.key;
+            break;
+          }
+        }
+        for (final entry in _rightKeys.entries) {
+          final c = _toLocal(_centerOfKey(entry.value));
+          if (c == null) continue;
+          if ((c - firstPoint).distance <= endpointRadius) {
+            rightCandidate = entry.key;
+            break;
+          }
+        }
+      }
+
+      if (leftCandidate != null && rightCandidate != null) {
+        await _attemptProposedMatch(leftCandidate, rightCandidate);
+      }
     }
 
     if (mounted) {
@@ -276,118 +333,153 @@ class _DragMatchAreaState extends State<DragMatchArea> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onPanStart: (d) => _handlePanStart(d.globalPosition),
-      onPanUpdate: (details) => _handlePanUpdate(details.globalPosition),
-      onPanEnd: (_) => _handlePanEnd(),
-      onPanCancel: () => _handlePanEnd(),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: widget.leftItems.map((item) {
-                      return GestureDetector(
-                        onTap: () async {
-                          setState(() {
-                            if (_selectedLeft == item) {
+    return Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: (ev) => _handlePanStart(ev.position),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onPanStart: (d) => _handlePanStart(d.globalPosition),
+        onPanUpdate: (details) => _handlePanUpdate(details.globalPosition),
+        onPanEnd: (_) => _handlePanEnd(),
+        onPanCancel: () => _handlePanEnd(),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable:
+                        widget.isDrawingNotifier ?? _fallbackDrawingNotifier,
+                    builder: (context, isDrawing, child) {
+                      return IgnorePointer(
+                        ignoring: isDrawing,
+                        child: SingleChildScrollView(
+                          physics: isDrawing
+                              ? const NeverScrollableScrollPhysics()
+                              : null,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: widget.leftItems.map((item) {
+                        return GestureDetector(
+                          onTap: () async {
+                            setState(() {
+                              if (_selectedLeft == item) {
+                                _selectedLeft = null;
+                              } else {
+                                _selectedLeft = item;
+                              }
+                            });
+                            if (_selectedLeft != null &&
+                                _selectedRight != null) {
+                              await _attemptProposedMatch(
+                                  _selectedLeft, _selectedRight);
                               _selectedLeft = null;
-                            } else {
-                              _selectedLeft = item;
-                            }
-                          });
-                          if (_selectedLeft != null && _selectedRight != null) {
-                            await _attemptProposedMatch(
-                                _selectedLeft, _selectedRight);
-                            _selectedLeft = null;
-                            _selectedRight = null;
-                          }
-                        },
-                        child: AnimatedScale(
-                          scale: _animating[item] == true ? 1.2 : 1.0,
-                          duration: const Duration(milliseconds: 220),
-                          child: Container(
-                            key: _leftKeys[item],
-                            margin: const EdgeInsets.symmetric(vertical: 16),
-                            width: 96,
-                            height: 96,
-                            alignment: Alignment.center,
-                            child: widget.buildLeft(item),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: widget.rightItems.map((item) {
-                      return GestureDetector(
-                        onTap: () async {
-                          setState(() {
-                            if (_selectedRight == item) {
                               _selectedRight = null;
-                            } else {
-                              _selectedRight = item;
                             }
-                          });
-                          if (_selectedLeft != null && _selectedRight != null) {
-                            await _attemptProposedMatch(
-                                _selectedLeft, _selectedRight);
-                            _selectedLeft = null;
-                            _selectedRight = null;
-                          }
-                        },
-                        child: AnimatedScale(
-                          scale: _animating[item] == true ? 1.2 : 1.0,
-                          duration: const Duration(milliseconds: 220),
-                          child: Container(
-                            key: _rightKeys[item],
-                            margin: const EdgeInsets.symmetric(vertical: 16),
-                            width: 96,
-                            height: 96,
-                            alignment: Alignment.center,
-                            child: widget.buildRight(item),
+                          },
+                          child: AnimatedScale(
+                            scale: _animating[item] == true ? 1.2 : 1.0,
+                            duration: const Duration(milliseconds: 220),
+                            child: Container(
+                              key: _leftKeys[item],
+                              margin: const EdgeInsets.symmetric(vertical: 16),
+                              width: 96,
+                              height: 96,
+                              alignment: Alignment.center,
+                              child: widget.buildLeft(item),
+                            ),
                           ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+                SizedBox(width: widget.preferredCenterGap ?? 32),
+                Expanded(
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable:
+                        widget.isDrawingNotifier ?? _fallbackDrawingNotifier,
+                    builder: (context, isDrawing, child) {
+                      return IgnorePointer(
+                        ignoring: isDrawing,
+                        child: SingleChildScrollView(
+                          physics: isDrawing
+                              ? const NeverScrollableScrollPhysics()
+                              : null,
+                          child: child,
                         ),
                       );
-                    }).toList(),
+                    },
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: widget.rightItems.map((item) {
+                        return GestureDetector(
+                          onTap: () async {
+                            setState(() {
+                              if (_selectedRight == item) {
+                                _selectedRight = null;
+                              } else {
+                                _selectedRight = item;
+                              }
+                            });
+                            if (_selectedLeft != null &&
+                                _selectedRight != null) {
+                              await _attemptProposedMatch(
+                                  _selectedLeft, _selectedRight);
+                              _selectedLeft = null;
+                              _selectedRight = null;
+                            }
+                          },
+                          child: AnimatedScale(
+                            scale: _animating[item] == true ? 1.2 : 1.0,
+                            duration: const Duration(milliseconds: 220),
+                            child: Container(
+                              key: _rightKeys[item],
+                              margin: const EdgeInsets.symmetric(vertical: 16),
+                              width: 96,
+                              height: 96,
+                              alignment: Alignment.center,
+                              child: widget.buildRight(item),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          if (_points.isNotEmpty)
-            CustomPaint(
-              painter: _FreehandPainter(points: List.of(_points)),
+              ],
             ),
-          if (_hoverTarget != null)
-            Builder(builder: (context) {
-              final center = _toLocal(_centerOfKey(_draggingFromLeft
-                  ? _rightKeys[_hoverTarget]
-                  : _leftKeys[_hoverTarget]));
-              if (center == null) return const SizedBox.shrink();
-              return Positioned(
-                left: center.dx - 18,
-                top: center.dy - 18,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withAlpha(46),
-                    shape: BoxShape.circle,
+            if (_points.isNotEmpty)
+              CustomPaint(
+                painter: _FreehandPainter(points: List.of(_points)),
+              ),
+            // debug overlay removed
+            if (_hoverTarget != null)
+              Builder(builder: (context) {
+                final center = _toLocal(_centerOfKey(_draggingFromLeft
+                    ? _rightKeys[_hoverTarget]
+                    : _leftKeys[_hoverTarget]));
+                if (center == null) return const SizedBox.shrink();
+                return Positioned(
+                  left: center.dx - 18,
+                  top: center.dy - 18,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withAlpha(46),
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
-              );
-            }),
-        ],
+                );
+              }),
+          ],
+        ),
       ),
     );
   }
@@ -418,7 +510,7 @@ class _FreehandPainter extends CustomPainter {
 
       final alphaFactor = 0.2 + 0.8 * (i / n);
       final combinedAlpha = (220 * alphaFactor).clamp(0, 255).toInt();
-      final color = Colors.deepOrange.withOpacity(combinedAlpha / 255.0);
+      final color = Colors.deepOrange.withAlpha(combinedAlpha);
 
       final paint = Paint()
         ..color = color

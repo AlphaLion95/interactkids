@@ -29,6 +29,7 @@ class _AnimatedBouncingButtonState extends State<AnimatedBouncingButton>
   late final AnimationController _controller;
   late final Animation<double> _scaleAnim;
   late final Animation<double> _floatAnim;
+  double _pressScale = 1.0;
 
   @override
   void initState() {
@@ -77,7 +78,14 @@ class _AnimatedBouncingButtonState extends State<AnimatedBouncingButton>
         },
         child: GestureDetector(
           onTap: widget.onTap,
-          child: widget.child,
+          onTapDown: (_) => setState(() => _pressScale = 0.92),
+          onTapUp: (_) => setState(() => _pressScale = 1.0),
+          onTapCancel: () => setState(() => _pressScale = 1.0),
+          child: AnimatedScale(
+            scale: _pressScale,
+            duration: const Duration(milliseconds: 120),
+            child: widget.child,
+          ),
         ),
       ),
     );

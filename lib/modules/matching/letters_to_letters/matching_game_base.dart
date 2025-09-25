@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // confetti and haptic are used inside the drag area; keep this file minimal
 import 'package:interactkids/modules/matching/letters_to_letters/matching_models.dart';
 import 'package:interactkids/modules/matching/pictures_to_pictures/pictures_match_area.dart';
+import 'package:interactkids/modules/matching/pictures_to_pictures/pictures_mode.dart';
 import 'package:interactkids/modules/matching/letters_to_letters/letters_mode.dart';
 import 'package:interactkids/widgets/celebration_overlay.dart';
 import 'package:interactkids/widgets/bouncing_button.dart';
@@ -247,6 +248,11 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
                               buildRight: (item) =>
                                   widget.mode.buildRightItem(context, item),
                               isDrawingNotifier: _isDrawingNotifier,
+                              preferredCenterGap:
+                                  (widget.mode is MatchingPicturesMode
+                                      ? (widget.mode as MatchingPicturesMode)
+                                          .preferredCenterGap
+                                      : null),
                               onProposeMatch: (l, r) async {
                                 try {
                                   final ok = widget.mode.pairs
@@ -325,7 +331,13 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
                                   },
                                 ),
                               ),
-                              const SizedBox(width: 32),
+                              SizedBox(
+                                width: (widget.mode is MatchingPicturesMode
+                                        ? (widget.mode as MatchingPicturesMode)
+                                            .preferredCenterGap
+                                        : null) ??
+                                    32,
+                              ),
                               SizedBox(
                                 width: 120,
                                 child: ValueListenableBuilder<bool>(
