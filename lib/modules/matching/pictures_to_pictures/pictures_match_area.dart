@@ -51,17 +51,23 @@ class _DragMatchAreaState extends State<DragMatchArea> {
   @override
   void initState() {
     super.initState();
-    for (final l in widget.leftItems) _leftKeys[l] = GlobalKey();
-    for (final r in widget.rightItems) _rightKeys[r] = GlobalKey();
+    for (final l in widget.leftItems) {
+      _leftKeys[l] = GlobalKey();
+    }
+    for (final r in widget.rightItems) {
+      _rightKeys[r] = GlobalKey();
+    }
   }
 
   @override
   void didUpdateWidget(covariant DragMatchArea oldWidget) {
     super.didUpdateWidget(oldWidget);
-    for (final l in widget.leftItems)
+    for (final l in widget.leftItems) {
       _leftKeys.putIfAbsent(l, () => GlobalKey());
-    for (final r in widget.rightItems)
+    }
+    for (final r in widget.rightItems) {
       _rightKeys.putIfAbsent(r, () => GlobalKey());
+    }
   }
 
   Offset? _centerOfKey(GlobalKey? key) {
@@ -100,15 +106,17 @@ class _DragMatchAreaState extends State<DragMatchArea> {
         : (local.dx <= marginPx || local.dx >= (width - marginPx));
 
     try {
-      if (widget.isDrawingNotifier != null)
+      if (widget.isDrawingNotifier != null) {
         widget.isDrawingNotifier!.value = !startedInMargin;
+      }
     } catch (_) {}
 
     setState(() {
       _points = [];
       final p = local;
-      if (p != null)
+      if (p != null) {
         _points.add(_TimedPoint(p, DateTime.now().millisecondsSinceEpoch));
+      }
       _hoverTarget = null;
       _draggingFromLeft = (p?.dx ?? 0) < (width / 2);
     });
@@ -117,11 +125,12 @@ class _DragMatchAreaState extends State<DragMatchArea> {
   void _handlePanUpdate(Offset globalPos) {
     setState(() {
       final p = _toLocal(globalPos);
-      if (p != null)
+      if (p != null) {
         _points.add(_TimedPoint(p, DateTime.now().millisecondsSinceEpoch));
+      }
 
       // update hover target depending on last point
-      final threshold = 32.0;
+      const threshold = 32.0;
       _hoverTarget = null;
       if (_points.isEmpty) return;
       final last = _points.last;
@@ -171,7 +180,7 @@ class _DragMatchAreaState extends State<DragMatchArea> {
       return;
     }
 
-    final threshold = 36.0;
+    const threshold = 36.0;
     int? firstLeftIndex;
     int? firstRightIndex;
     dynamic firstLeftKey;
@@ -220,8 +229,9 @@ class _DragMatchAreaState extends State<DragMatchArea> {
     }
 
     try {
-      if (widget.isDrawingNotifier != null)
+      if (widget.isDrawingNotifier != null) {
         widget.isDrawingNotifier!.value = false;
+      }
     } catch (_) {}
   }
 
@@ -247,7 +257,7 @@ class _DragMatchAreaState extends State<DragMatchArea> {
       await Future.delayed(const Duration(milliseconds: 200));
       if (mounted) {
         setState(() {
-          _hoverTarget = savedHover == null ? null : savedHover;
+          _hoverTarget = savedHover;
         });
       }
     }
@@ -284,10 +294,11 @@ class _DragMatchAreaState extends State<DragMatchArea> {
                       return GestureDetector(
                         onTap: () async {
                           setState(() {
-                            if (_selectedLeft == item)
+                            if (_selectedLeft == item) {
                               _selectedLeft = null;
-                            else
+                            } else {
                               _selectedLeft = item;
+                            }
                           });
                           if (_selectedLeft != null && _selectedRight != null) {
                             await _attemptProposedMatch(
@@ -321,10 +332,11 @@ class _DragMatchAreaState extends State<DragMatchArea> {
                       return GestureDetector(
                         onTap: () async {
                           setState(() {
-                            if (_selectedRight == item)
+                            if (_selectedRight == item) {
                               _selectedRight = null;
-                            else
+                            } else {
                               _selectedRight = item;
+                            }
                           });
                           if (_selectedLeft != null && _selectedRight != null) {
                             await _attemptProposedMatch(

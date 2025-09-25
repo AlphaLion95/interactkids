@@ -116,14 +116,14 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
             width: 96,
             height: 96,
             decoration:
-                BoxDecoration(color: Colors.yellow, shape: BoxShape.circle)),
+                const BoxDecoration(color: Colors.yellow, shape: BoxShape.circle)),
       ],
       'medium': [
-        Icon(Icons.star, size: 72, color: Colors.yellow),
-        Icon(Icons.favorite, size: 72, color: Colors.pink),
+        const Icon(Icons.star, size: 72, color: Colors.yellow),
+        const Icon(Icons.favorite, size: 72, color: Colors.pink),
       ],
       'hard': [
-        Icon(Icons.cake, size: 48, color: Colors.brown),
+        const Icon(Icons.cake, size: 48, color: Colors.brown),
         // replace icecream icon with a solid blue-grey rounded block
         Container(
             width: 48,
@@ -149,8 +149,8 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
             backgroundColor: Colors.green,
             child: Text('🥦', style: TextStyle(fontSize: 36))),
       ],
-      'medium': [Icon(Icons.grass, size: 72, color: Colors.green)],
-      'hard': [Icon(Icons.spa, size: 48, color: Colors.lightGreen)],
+      'medium': [const Icon(Icons.grass, size: 72, color: Colors.green)],
+      'hard': [const Icon(Icons.spa, size: 48, color: Colors.lightGreen)],
     },
     'Colors': {
       'easy': [
@@ -164,11 +164,11 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
             color: Colors.green, child: SizedBox(width: 100, height: 100)),
       ],
       'medium': [
-        ColoredBox(color: Colors.green, child: SizedBox(width: 72, height: 72))
+        const ColoredBox(color: Colors.green, child: SizedBox(width: 72, height: 72))
       ],
       'hard': [
-        ColoredBox(color: Colors.blue, child: SizedBox(width: 48, height: 48)),
-        ColoredBox(color: Colors.yellow, child: SizedBox(width: 48, height: 48))
+        const ColoredBox(color: Colors.blue, child: SizedBox(width: 48, height: 48)),
+        const ColoredBox(color: Colors.yellow, child: SizedBox(width: 48, height: 48))
       ],
     },
     'Shapes': {
@@ -283,10 +283,10 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                           borderRadius: BorderRadius.circular(s * 0.12)))));
         }),
       ],
-      'medium': [Icon(Icons.square_foot, size: 72, color: Colors.brown)],
+      'medium': [const Icon(Icons.square_foot, size: 72, color: Colors.brown)],
       'hard': [
-        Icon(Icons.change_history, size: 48, color: Colors.pink),
-        Icon(Icons.crop_square, size: 48, color: Colors.cyan)
+        const Icon(Icons.change_history, size: 48, color: Colors.pink),
+        const Icon(Icons.crop_square, size: 48, color: Colors.cyan)
       ],
     },
   };
@@ -298,7 +298,9 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
       final difficulty = entry.key;
       if (_selectedDifficulty != null &&
           _selectedDifficulty != 'all' &&
-          difficulty != _selectedDifficulty) continue;
+          difficulty != _selectedDifficulty) {
+        continue;
+      }
       for (var i = 0; i < entry.value.length; i++) {
         items.add('$category-$difficulty-$i');
       }
@@ -324,7 +326,9 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     groups.forEach((difficulty, widgets) {
       if (_selectedDifficulty != null &&
           _selectedDifficulty != 'all' &&
-          difficulty != _selectedDifficulty) return;
+          difficulty != _selectedDifficulty) {
+        return;
+      }
       for (var i = 0; i < widgets.length; i++) {
         final id = '$_selectedCategory-$difficulty-$i';
         Widget w = widgets[i];
@@ -440,7 +444,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(color: Colors.black12, blurRadius: 12)
                           ],
                         ),
@@ -524,8 +528,9 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                                             horizontal: 6),
                                         child: GestureDetector(
                                           onTap: () {
-                                            if (_selectedDifficulty == level)
+                                            if (_selectedDifficulty == level) {
                                               return;
+                                            }
                                             setState(() {
                                               _selectedDifficulty = level;
                                             });

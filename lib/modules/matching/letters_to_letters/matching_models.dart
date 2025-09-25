@@ -20,6 +20,11 @@ abstract class MatchingGameMode {
   final List<MatchingPair> pairs;
   MatchingGameMode(this.pairs);
 
+  /// Whether the left column should be shuffled. Defaults to true for
+  /// existing modes; modes like letters/numbers that want a fixed
+  /// left ordering should override this to return false.
+  bool get shuffleLeft => true;
+
   /// A unique key used to persist progress for this mode.
   /// Concrete modes should override this to provide a distinct key.
   String get progressKey => 'matching_default_progress';

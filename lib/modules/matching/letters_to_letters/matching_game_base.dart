@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // confetti and haptic are used inside the drag area; keep this file minimal
 import 'package:interactkids/modules/matching/letters_to_letters/matching_models.dart';
 import 'package:interactkids/modules/matching/pictures_to_pictures/pictures_match_area.dart';
+import 'package:interactkids/modules/matching/letters_to_letters/letters_mode.dart';
 import 'package:interactkids/widgets/celebration_overlay.dart';
 import 'package:interactkids/widgets/bouncing_button.dart';
 
@@ -58,14 +59,51 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant MatchingGameBase oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the game mode changed (letters <-> numbers etc), reload progress and
+    // reset transient state so modes remain independent.
+    if (oldWidget.mode.runtimeType != widget.mode.runtimeType ||
+        oldWidget.mode.progressKey != widget.mode.progressKey) {
+      _matchHistory.clear();
+      selectedLeft = null;
+      selectedRight = null;
+      matches.clear();
+      completed = false;
+      _showCelebration = false;
+      // Reload the stored progress for the newly selected mode (or empty sets).
+      _loadProgress();
+    }
+  }
+
   Future<void> _loadProgress() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getStringList(_progressKey);
     final allPairs = widget.mode.pairs;
     matches = {};
+    // Build left and right lists. Some modes (letters/numbers) prefer the
+    // left column to stay in a stable, sorted order while the right column
+    // is randomized for matching. Respect mode.shuffleLeft to decide.
     leftItems = allPairs.map((p) => p.left).toList();
     rightItems = allPairs.map((p) => p.right).toList();
-    leftItems.shuffle();
+    if (widget.mode.shuffleLeft) {
+      leftItems.shuffle();
+    } else {
+      // ensure deterministic ordering for left side. If items look numeric,
+      // sort numerically; otherwise fall back to string compare.
+      try {
+        bool allNumeric =
+            leftItems.every((v) => int.tryParse(v.toString()) != null);
+        if (allNumeric) {
+          leftItems.sort((a, b) =>
+              int.parse(a.toString()).compareTo(int.parse(b.toString())));
+        } else {
+          leftItems.sort((a, b) => a.toString().compareTo(b.toString()));
+        }
+      } catch (_) {}
+    }
+    // Right side should usually be randomized so the child items are mixed.
     rightItems.shuffle();
     if (saved != null) {
       for (final entry in saved) {
@@ -128,17 +166,14 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
   Future<void> _resetGame() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_progressKey);
-    setState(() {
-      leftItems = widget.mode.pairs.map((p) => p.left).toList();
-      rightItems = widget.mode.pairs.map((p) => p.right).toList();
-      leftItems.shuffle();
-      rightItems.shuffle();
-      matches.clear();
-      completed = false;
-      _showCelebration = false;
-      selectedLeft = null;
-      selectedRight = null;
-    });
+    // Clear transient state and reload lists according to mode settings.
+    _matchHistory.clear();
+    selectedLeft = null;
+    selectedRight = null;
+    matches.clear();
+    completed = false;
+    _showCelebration = false;
+    await _loadProgress();
   }
 
   /// Public API used by external screens to reset progress.
@@ -152,7 +187,15 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
     matches.remove(left);
     leftItems.add(left);
     rightItems.add(right);
-    leftItems.shuffle();
+    // Respect mode ordering: if left should not be shuffled, keep it
+    // in sorted order; otherwise shuffle to mix it back in.
+    if (widget.mode.shuffleLeft) {
+      leftItems.shuffle();
+    } else {
+      try {
+        leftItems.sort((a, b) => a.toString().compareTo(b.toString()));
+      } catch (_) {}
+    }
     rightItems.shuffle();
     completed = false;
     _showCelebration = false;
@@ -187,7 +230,7 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
               if (widget.showMatchedTray) const SizedBox(height: 12),
               Expanded(
                 child: completed
-                    ? Center(
+                    ? const Center(
                         child: Text('Great job! All pairs matched!',
                             style: TextStyle(
                                 fontSize: 24, fontWeight: FontWeight.bold)))
@@ -241,47 +284,43 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
                                 child: ValueListenableBuilder<bool>(
                                   valueListenable: _isDrawingNotifier,
                                   builder: (context, isDrawing, child) {
-                                    return Scrollbar(
+                                    return ListView(
                                       controller: _leftScrollController,
-                                      thumbVisibility: true,
-                                      child: ListView(
-                                        controller: _leftScrollController,
-                                        primary: false,
-                                        physics: isDrawing
-                                            ? const NeverScrollableScrollPhysics()
-                                            : null,
-                                        children: [
-                                          for (final item in leftItems)
-                                            GestureDetector(
-                                              onTap: () => _onLeftTap(item),
-                                              child: Container(
-                                                margin:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 8),
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                    color: selectedLeft == item
-                                                        ? Colors.orange
-                                                        : Colors.transparent,
-                                                    width: 3,
-                                                  ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
+                                      primary: false,
+                                      physics: isDrawing
+                                          ? const NeverScrollableScrollPhysics()
+                                          : null,
+                                      children: [
+                                        for (final item in leftItems)
+                                          GestureDetector(
+                                            onTap: () => _onLeftTap(item),
+                                            child: Container(
+                                              margin:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 8),
+                                              decoration: BoxDecoration(
+                                                // Always keep border transparent to avoid
+                                                // the orange focus ring when tapped.
+                                                border: Border.all(
+                                                  color: Colors.transparent,
+                                                  width: 3,
                                                 ),
-                                                child: selectedLeft == item
-                                                    ? AnimatedBouncingButton(
-                                                        width: 90,
-                                                        height: 90,
-                                                        child: widget.mode
-                                                            .buildLeftItem(
-                                                                context, item),
-                                                      )
-                                                    : widget.mode.buildLeftItem(
-                                                        context, item),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
+                                              child: selectedLeft == item
+                                                  ? AnimatedBouncingButton(
+                                                      width: 90,
+                                                      height: 90,
+                                                      child: widget.mode
+                                                          .buildLeftItem(
+                                                              context, item),
+                                                    )
+                                                  : widget.mode.buildLeftItem(
+                                                      context, item),
                                             ),
-                                        ],
-                                      ),
+                                          ),
+                                      ],
                                     );
                                   },
                                 ),
@@ -292,48 +331,43 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
                                 child: ValueListenableBuilder<bool>(
                                   valueListenable: _isDrawingNotifier,
                                   builder: (context, isDrawing, child) {
-                                    return Scrollbar(
+                                    return ListView(
                                       controller: _rightScrollController,
-                                      thumbVisibility: true,
-                                      child: ListView(
-                                        controller: _rightScrollController,
-                                        primary: false,
-                                        physics: isDrawing
-                                            ? const NeverScrollableScrollPhysics()
-                                            : null,
-                                        children: [
-                                          for (final item in rightItems)
-                                            GestureDetector(
-                                              onTap: () => _onRightTap(item),
-                                              child: Container(
-                                                margin:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 8),
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                    color: selectedRight == item
-                                                        ? Colors.orange
-                                                        : Colors.transparent,
-                                                    width: 3,
-                                                  ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
+                                      primary: false,
+                                      physics: isDrawing
+                                          ? const NeverScrollableScrollPhysics()
+                                          : null,
+                                      children: [
+                                        for (final item in rightItems)
+                                          GestureDetector(
+                                            onTap: () => _onRightTap(item),
+                                            child: Container(
+                                              margin:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 8),
+                                              decoration: BoxDecoration(
+                                                // Keep border transparent to avoid
+                                                // orange focus ring on tap.
+                                                border: Border.all(
+                                                  color: Colors.transparent,
+                                                  width: 3,
                                                 ),
-                                                child: selectedRight == item
-                                                    ? AnimatedBouncingButton(
-                                                        width: 90,
-                                                        height: 90,
-                                                        child: widget.mode
-                                                            .buildRightItem(
-                                                                context, item),
-                                                      )
-                                                    : widget.mode
-                                                        .buildRightItem(
-                                                            context, item),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
+                                              child: selectedRight == item
+                                                  ? AnimatedBouncingButton(
+                                                      width: 90,
+                                                      height: 90,
+                                                      child: widget.mode
+                                                          .buildRightItem(
+                                                              context, item),
+                                                    )
+                                                  : widget.mode.buildRightItem(
+                                                      context, item),
                                             ),
-                                        ],
-                                      ),
+                                          ),
+                                      ],
                                     );
                                   },
                                 ),
@@ -368,41 +402,89 @@ class _MatchedPairDisplay extends StatelessWidget {
       {required this.left, required this.right, required this.mode});
   @override
   Widget build(BuildContext context) {
-    if (left is String &&
-        right is String &&
-        left.length == 1 &&
-        right.length == 1) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        margin: const EdgeInsets.symmetric(vertical: 2),
-        decoration: BoxDecoration(
-          color: Colors.green.shade50,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.green.withAlpha(26),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              left + right,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-                fontFamily: 'Nunito',
+    // If the current mode is the Letters mode, keep the previous letters
+    // style: a small green rounded pill showing the concatenated left+right
+    // (e.g., 'Aa'). This avoids changing letters UI while still handling
+    // numeric matches specially below.
+    if (mode is MatchingLettersMode) {
+      if (left is String &&
+          right is String &&
+          left.length == 1 &&
+          right.length == 1) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withAlpha(26),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.check_circle, color: Colors.green, size: 20),
-          ],
-        ),
-      );
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                left + right,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.check_circle, color: Colors.green, size: 20),
+            ],
+          ),
+        );
+      }
+    }
+
+    // If both sides are identical numeric strings (e.g., '1' & '1'), show
+    // the single number instead of concatenating them which would render '11'.
+    if (left is String && right is String) {
+      final leftStr = left as String;
+      final rightStr = right as String;
+      final bothNumeric =
+          int.tryParse(leftStr) != null && int.tryParse(rightStr) != null;
+      if (bothNumeric && leftStr == rightStr) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withAlpha(26),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                leftStr,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.check_circle, color: Colors.green, size: 20),
+            ],
+          ),
+        );
+      }
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
