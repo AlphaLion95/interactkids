@@ -13,7 +13,6 @@ import 'package:interactkids/widgets/bouncing_button.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-import 'package:flutter_svg/flutter_svg.dart';
 
 // Small decorative widgets used by the pictures screen to create
 // non-rectangular, varied visuals (triangles, popsicles, cones, etc.)
@@ -127,57 +126,53 @@ class _CustomSetImageEditorState extends State<_CustomSetImageEditor> {
                   children: [
                     const Text('No images yet. Tap + to add images.'),
                     const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                        onPressed: _addImages,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add images'))
+                  'medium': [
+                  // Use the same style as easy but slightly smaller images to keep
+                  // Set 2 visually consistent with Set 1. Fall back to a broken_image
+                  // icon if asset not found.
+                  Center(
+                    child: SizedBox(
+                      width: 240,
+                      height: 240,
+                      child: Image.asset('assets/images/fruits/Fruits/apple.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (ctx, e, st) =>
+                          const Center(child: Icon(Icons.broken_image))))),
+                  Center(
+                    child: SizedBox(
+                      width: 240,
+                      height: 240,
+                      child: Image.asset('assets/images/fruits/Fruits/banana.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (ctx, e, st) =>
+                          const Center(child: Icon(Icons.broken_image))))),
+                  Center(
+                    child: SizedBox(
+                      width: 240,
+                      height: 240,
+                      child: Image.asset('assets/images/fruits/Fruits/cherry.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (ctx, e, st) =>
+                          const Center(child: Icon(Icons.broken_image))))),
                   ],
-                ),
-              )
-            : Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: _images.length,
-                  itemBuilder: (ctx, idx) {
-                    final path = _images[idx];
-                    return Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.grey.shade100,
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.file(File(path), fit: BoxFit.cover),
-                          ),
-                        ),
-                        Positioned(
-                          right: 4,
-                          top: 4,
-                          child: Row(
-                            children: [
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.arrow_back_ios, size: 16),
-                                color: Colors.white,
-                                onPressed:
-                                    idx == 0 ? null : () => _moveLeft(idx),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.arrow_forward_ios,
-                                    size: 16),
-                                color: Colors.white,
-                                onPressed: idx == _images.length - 1
-                                    ? null
-                                    : () => _moveRight(idx),
-                              ),
+                  'hard': [
+                  Center(
+                    child: SizedBox(
+                      width: 240,
+                      height: 240,
+                      child: Image.asset('assets/images/fruits/Fruits/kiwi.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (ctx, e, st) =>
+                          const Center(child: Icon(Icons.broken_image))))),
+                  Center(
+                    child: SizedBox(
+                      width: 240,
+                      height: 240,
+                      child: Image.asset('assets/images/fruits/Fruits/lemon.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (ctx, e, st) =>
+                          const Center(child: Icon(Icons.broken_image))))),
+                  ],
                               IconButton(
                                 icon: const Icon(Icons.delete, size: 18),
                                 color: Colors.redAccent,
@@ -206,57 +201,50 @@ class _CustomSetImageEditorState extends State<_CustomSetImageEditor> {
 }
 
 class _TriangleBadge extends StatelessWidget {
-  final Color color;
-  final double size;
-  const _TriangleBadge({this.color = Colors.orange, this.size = 100});
-  @override
-  Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: _TriangleClipper(),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [
-            color.withAlpha((0.9 * 255).round()),
-            color.withAlpha((0.6 * 255).round())
-          ]),
-          boxShadow: [
-            BoxShadow(
-                color: color.withAlpha(60),
-                blurRadius: 8,
-                offset: const Offset(0, 4))
-          ],
-        ),
-        child: null,
-      ),
-    );
-  }
-}
-
-// Themed, animated category card used on the initial selection screen.
-class _CategoryCard extends StatefulWidget {
-  final String label;
-  final Color color;
-  final Widget visual;
-  final VoidCallback onTap;
-  const _CategoryCard(
-      {required this.label,
-      required this.color,
-      required this.visual,
-      required this.onTap});
-
-  @override
-  State<_CategoryCard> createState() => _CategoryCardState();
-}
-
-class _CategoryCardState extends State<_CategoryCard> {
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBouncingButton(
-      onTap: widget.onTap,
-      delay: (widget.label.hashCode % 3) * 120,
-      width: 160,
+    'medium': [
+    Center(
+      child: SizedBox(
+        width: 240,
+        height: 240,
+        child: Image.asset('assets/images/fruits/Fruits/apple.png',
+          fit: BoxFit.contain,
+          errorBuilder: (ctx, e, st) =>
+            const Center(child: Icon(Icons.broken_image))))),
+    Center(
+      child: SizedBox(
+        width: 240,
+        height: 240,
+        child: Image.asset('assets/images/fruits/Fruits/banana.png',
+          fit: BoxFit.contain,
+          errorBuilder: (ctx, e, st) =>
+            const Center(child: Icon(Icons.broken_image))))),
+    Center(
+      child: SizedBox(
+        width: 240,
+        height: 240,
+        child: Image.asset('assets/images/fruits/Fruits/cherry.png',
+          fit: BoxFit.contain,
+          errorBuilder: (ctx, e, st) =>
+            const Center(child: Icon(Icons.broken_image))))),
+    ],
+    'hard': [
+    Center(
+      child: SizedBox(
+        width: 240,
+        height: 240,
+        child: Image.asset('assets/images/fruits/Fruits/kiwi.png',
+          fit: BoxFit.contain,
+          errorBuilder: (ctx, e, st) =>
+            const Center(child: Icon(Icons.broken_image))))),
+    Center(
+      child: SizedBox(
+        width: 240,
+        height: 240,
+        child: Image.asset('assets/images/fruits/Fruits/lemon.png',
+          fit: BoxFit.contain,
+          errorBuilder: (ctx, e, st) =>
+            const Center(child: Icon(Icons.broken_image))))),
+    ],
       height: 160,
       child: Container(
         width: 160,
@@ -639,7 +627,6 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
       final Map<String, dynamic> manifestMap = json.decode(manifestJson);
       final fruits = <String>[];
       final vegetables = <String>[];
-      final fruitsCartoon = <String>[];
       final allowedExts = {'.png', '.jpg', '.jpeg', '.gif', '.bmp'};
       for (final key in manifestMap.keys) {
         final lowerKey = key.toLowerCase();
@@ -673,12 +660,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
             final bd = await rootBundle.load(preferred);
             final bytes = bd.buffer.asUint8List();
             await ui.instantiateImageCodec(bytes);
-            // If this asset lives in a 'cartoon' subfolder, register it separately
-            if (preferred.toLowerCase().contains('/fruits/cartoon/')) {
-              fruitsCartoon.add(preferred);
-            } else {
-              fruits.add(preferred);
-            }
+            fruits.add(preferred);
           } catch (e) {
             debugPrint('Skipping invalid fruit asset $preferred: $e');
           }
@@ -697,51 +679,13 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         }
       }
       fruits.sort();
-      fruitsCartoon.sort();
       vegetables.sort();
       debugPrint(
           'PicturesScreen: discovered assets - fruits=${fruits.length}, vegetables=${vegetables.length}');
-      // Log cartoon assets separately to help debugging when users add new files
-      debugPrint(
-          'PicturesScreen: discovered cartoon fruits=${fruitsCartoon.length}');
-      if (fruitsCartoon.isNotEmpty) {
-        // Print up to 12 entries to avoid overly large logs
-        final sample = fruitsCartoon.take(12).join(', ');
-        debugPrint('PicturesScreen: fruits_cartoon sample: $sample');
-      }
-      // Print a small sample of keys from the manifest that include '/fruits/'
-      try {
-        final keys = manifestMap.keys
-            .where((k) => k.toLowerCase().contains('/fruits/'))
-            .toList();
-        if (keys.isNotEmpty) {
-          final sampleKeys = keys.take(24).join(', ');
-          debugPrint(
-              'PicturesScreen: assetManifest fruits sample count=${keys.length}');
-          debugPrint(
-              'PicturesScreen: assetManifest fruits sample: $sampleKeys');
-        }
-        final cartoonKeys = manifestMap.keys
-            .where((k) => k.toLowerCase().contains('/fruits/cartoon/'))
-            .toList();
-        debugPrint(
-            'PicturesScreen: assetManifest fruits/cartoon count=${cartoonKeys.length}');
-        if (cartoonKeys.isNotEmpty)
-          debugPrint(
-              'PicturesScreen: assetManifest fruits/cartoon sample: ${cartoonKeys.take(12).join(', ')}');
-      } catch (e) {
-        debugPrint('PicturesScreen: failed to sample manifest keys: $e');
-      }
       setState(() {
         _assetsByFolder['fruits'] = fruits;
-        // expose cartoon set separately so Set 2 can prefer these images
-        _assetsByFolder['fruits_cartoon'] = fruitsCartoon;
         _assetsByFolder['vegetables'] = vegetables;
       });
-      // Remount MatchingGameBase so that new assets are used when building
-      // pairs and visuals; this avoids stale pairs/visuals when assets change.
-      _gameKey = GlobalKey<MatchingGameBaseState>();
-      debugPrint('PicturesScreen: _gameKey refreshed after asset load');
       debugPrint('PicturesScreen: _assetsByFolder updated and setState called');
     } catch (e) {
       // Ignore manifest loading errors; fallback to static lists.
@@ -848,63 +792,55 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                         const Center(child: Icon(Icons.broken_image))))),
       ],
       'medium': [
-        // Use bundled SVG icons for Set 2 medium
-        SizedBox(
+        // Move previous large emoji/graphic hints to Medium level for variety
+        const Center(child: Text('�', style: TextStyle(fontSize: 72))),
+        const Center(child: Text('�', style: TextStyle(fontSize: 72))),
+        // Fruit-like colored blocks with emoji inside for variety
+        Container(
+            width: 96,
+            height: 72,
+            decoration: BoxDecoration(
+                color: Colors.orangeAccent,
+                borderRadius: BorderRadius.circular(12)),
+            child: const Center(
+                child: Text('🥭', style: TextStyle(fontSize: 36)))),
+        Container(
             width: 96,
             height: 96,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/apple.svg'))),
-        SizedBox(
+            decoration: BoxDecoration(
+                color: Colors.redAccent.shade200,
+                borderRadius: BorderRadius.circular(16)),
+            child: const Center(
+                child: Text('🍓', style: TextStyle(fontSize: 36)))),
+        Container(
+            width: 88,
+            height: 56,
+            decoration: BoxDecoration(
+                color: Colors.yellow.shade700,
+                borderRadius: BorderRadius.circular(28)),
+            child: const Center(
+                child: Text('🍊', style: TextStyle(fontSize: 28)))),
+        // Triangle badge retained but tuned for a fruity color
+        const _TriangleBadge(color: Colors.pinkAccent, size: 100),
+        // Circle with lemon emoji
+        Container(
             width: 96,
             height: 96,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/banana.svg'))),
-        SizedBox(
-            width: 96,
-            height: 96,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/cherry.svg'))),
-        SizedBox(
-            width: 96,
-            height: 96,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/grapes.svg'))),
-        SizedBox(
-            width: 96,
-            height: 96,
-            child: Center(
-                child: SvgPicture.asset(
-                    'assets/images/icons/fruits/pineapple.svg'))),
-        SizedBox(
-            width: 96,
-            height: 96,
-            child: Center(
-                child: SvgPicture.asset(
-                    'assets/images/icons/fruits/strawberry.svg'))),
+            decoration: const BoxDecoration(
+                color: Colors.yellow, shape: BoxShape.circle),
+            child: const Center(
+                child: Text('🍋', style: TextStyle(fontSize: 36)))),
       ],
       'hard': [
-        SizedBox(
-            width: 64,
-            height: 64,
-            child: Center(
-                child: SvgPicture.asset(
-                    'assets/images/icons/fruits/pineapple.svg'))),
-        SizedBox(
-            width: 64,
-            height: 64,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/banana.svg'))),
-        SizedBox(
-            width: 64,
-            height: 64,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/apple.svg'))),
+        const Center(child: Text('🍒', style: TextStyle(fontSize: 48))),
+        // small colored block as a neutral 'fruit hint'
+        Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+                color: Colors.blueGrey, borderRadius: BorderRadius.circular(8)),
+            child: const Center(
+                child: Text('🥝', style: TextStyle(fontSize: 20)))),
       ],
     },
     'Vegetables': {
@@ -1133,13 +1069,6 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         return <MatchingPair>[];
       }
     }
-    // Resolve the user's selection (map custom -> base) so we can make
-    // decisions like whether to return early for Set 1 or continue for All.
-    String _resolvedSelection = _selectedDifficulty ?? 'all';
-    if (_customSetMapping.containsKey(_resolvedSelection)) {
-      _resolvedSelection = _customSetMapping[_resolvedSelection]!;
-    }
-
     // If 'easy' visuals are visible for the current selection (Set 1)
     if ((_isDifficultyVisible('easy')) &&
         (category == 'Fruits' || category == 'Vegetables')) {
@@ -1149,13 +1078,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         for (var i = 0; i < assets.length; i++) {
           items.add('$category-easy-$i');
         }
-        // If the user's selection resolves to Set 1 then return early so
-        // only Set 1 (easy) is shown. If the selection is 'all' or set2,
-        // continue to build pairs for the other difficulties so All shows
-        // everything.
-        if (_resolvedSelection == 'set1') {
-          return items.map((id) => MatchingPair(left: id, right: id)).toList();
-        }
+        return items.map((id) => MatchingPair(left: id, right: id)).toList();
       }
     }
 
@@ -1168,73 +1091,10 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
           _customSetMapping[difficulty] == 'empty') {
         continue;
       }
-      // Special-case: if category is Fruits and difficulty is medium/hard and
-      // we discovered cartoon assets, generate pairs from those instead of
-      // the hardcoded widget list so Set 2 uses uploaded images.
-      if (category == 'Fruits' &&
-          (difficulty == 'medium' || difficulty == 'hard')) {
-        final cartoons = _assetsByFolder['fruits_cartoon'];
-        if (cartoons != null && cartoons.isNotEmpty) {
-          // Interleave assets between medium and hard so both sets receive
-          // different images (medium: even indices, hard: odd indices).
-          final total = cartoons.length;
-          final mediumIndices = <int>[];
-          final hardIndices = <int>[];
-          for (var i = 0; i < total; i++) {
-            if (i % 2 == 0) {
-              mediumIndices.add(i);
-            } else {
-              hardIndices.add(i);
-            }
-          }
-          if (difficulty == 'medium') {
-            for (var i = 0; i < mediumIndices.length; i++) {
-              items.add('$category-$difficulty-$i');
-            }
-          } else {
-            for (var i = 0; i < hardIndices.length; i++) {
-              items.add('$category-$difficulty-$i');
-            }
-          }
-          continue;
-        }
-      }
       for (var i = 0; i < entry.value.length; i++) {
         items.add('$category-$difficulty-$i');
       }
     }
-    // If the current selection resolves to 'all', include stored custom-set
-    // images for this category so they also appear in the All tab.
-    try {
-      String selected = _selectedDifficulty ?? 'all';
-      if (_customSetMapping.containsKey(selected))
-        selected = _customSetMapping[selected]!;
-      if (selected == 'all') {
-        for (final key in _customSetImages.keys) {
-          // Only include custom sets for this category (or those without a category)
-          if (_customSetCategory.containsKey(key) &&
-              _customSetCategory[key] != category) continue;
-          final imgs = _customSetImages[key];
-          if (imgs == null || imgs.isEmpty) continue;
-          for (var i = 0; i < imgs.length; i++) {
-            final id = '$category-$key-$i';
-            if (!items.contains(id)) items.add(id);
-          }
-        }
-      }
-    } catch (_) {}
-
-    // Debug: log the final items so we can diagnose duplicate/missing IDs
-    try {
-      debugPrint(
-          'PicturesScreen: _makePairsForCategory for $category produced ${items.length} items');
-      if (items.length <= 48) {
-        debugPrint('PicturesScreen: items sample: ${items.join(', ')}');
-      } else {
-        debugPrint(
-            'PicturesScreen: items sample (first 48): ${items.take(48).join(', ')}');
-      }
-    } catch (_) {}
     return items.map((id) => MatchingPair(left: id, right: id)).toList();
   }
 
@@ -1556,117 +1416,16 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
           }
           return;
         }
-        // Special-case: if category is Fruits and difficulty is medium/hard (Set 2)
-        // prefer any discovered cartoon assets under assets/images/fruits/cartoon/
-        var usedCartoons = false;
-        if (_selectedCategory == 'Fruits' &&
-            (difficulty == 'medium' || difficulty == 'hard')) {
-          final cartoons = _assetsByFolder['fruits_cartoon'];
-          if (cartoons != null && cartoons.isNotEmpty) {
-            final total = cartoons.length;
-            // Build index lists matching the interleaving logic used above
-            final mediumIndices = <int>[];
-            final hardIndices = <int>[];
-            for (var i = 0; i < total; i++) {
-              if (i % 2 == 0) {
-                mediumIndices.add(i);
-              } else {
-                hardIndices.add(i);
-              }
-            }
-            if (difficulty == 'medium') {
-              for (var idx = 0; idx < mediumIndices.length; idx++) {
-                final assetIndex = mediumIndices[idx];
-                final id = '$_selectedCategory-$difficulty-$idx';
-                final assetPath = cartoons[assetIndex];
-                final tile = 96.0; // smaller tiles for Set 2
-                final w = SizedBox(
-                    width: tile,
-                    height: tile,
-                    child: Center(
-                        child: FittedBox(
-                      fit: BoxFit.contain,
-                      child: Image.asset(assetPath),
-                    )));
-                visuals[id] = w;
-              }
-            } else {
-              for (var idx = 0; idx < hardIndices.length; idx++) {
-                final assetIndex = hardIndices[idx];
-                final id = '$_selectedCategory-$difficulty-$idx';
-                final assetPath = cartoons[assetIndex];
-                final tile = 96.0; // smaller tiles for Set 2
-                final w = SizedBox(
-                    width: tile,
-                    height: tile,
-                    child: Center(
-                        child: FittedBox(
-                      fit: BoxFit.contain,
-                      child: Image.asset(assetPath),
-                    )));
-                visuals[id] = w;
-              }
-            }
-            usedCartoons = true;
-          }
-        }
-
-        if (!usedCartoons) {
-          for (var i = 0; i < widgets.length; i++) {
-            final id = '$_selectedCategory-$difficulty-$i';
-            Widget w = widgets[i];
-            // Uniform tile sizing: use the canonical tile size for all items so
-            // shapes and other visuals don't get cropped inconsistently.
-            w = SizedBox(width: 152, height: 152, child: Center(child: w));
-            visuals[id] = w;
-          }
+        for (var i = 0; i < widgets.length; i++) {
+          final id = '$_selectedCategory-$difficulty-$i';
+          Widget w = widgets[i];
+          // Uniform tile sizing: use the canonical tile size for all items so
+          // shapes and other visuals don't get cropped inconsistently.
+          w = SizedBox(width: 152, height: 152, child: Center(child: w));
+          visuals[id] = w;
         }
       });
     }
-
-    // If the user selected 'All' (or the selected difficulty maps to 'all'),
-    // include visuals for stored custom sets belonging to this category so
-    // the All tab shows uploaded images as additional tabs.
-    try {
-      String selected = _selectedDifficulty ?? 'all';
-      if (_customSetMapping.containsKey(selected))
-        selected = _customSetMapping[selected]!;
-      if (selected == 'all') {
-        for (final key in _customSetImages.keys) {
-          // Only include custom sets that belong to this category (or have no category)
-          if (_customSetCategory.containsKey(key) &&
-              _customSetCategory[key] != _selectedCategory) continue;
-          final imgs = _customSetImages[key];
-          if (imgs == null || imgs.isEmpty) continue;
-          for (var i = 0; i < imgs.length; i++) {
-            final id = '$_selectedCategory-$key-$i';
-            if (visuals.containsKey(id)) continue; // avoid duplicate
-            final path = imgs[i];
-            // Use same sizing as when custom set is selected directly
-            final tile = 136.0;
-            visuals[id] = SizedBox(
-                width: tile,
-                height: tile,
-                child: Center(
-                    child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Image.file(File(path)),
-                )));
-          }
-        }
-      }
-    } catch (_) {}
-
-    // Debug: log visuals and pairs to detect missing or mismatched IDs
-    try {
-      debugPrint('PicturesScreen: visuals built count=${visuals.length}');
-      if (visuals.length <= 48)
-        debugPrint('PicturesScreen: visuals keys: ${visuals.keys.join(', ')}');
-      debugPrint('PicturesScreen: pairs count=${pairs.length}');
-      if (pairs.length <= 48)
-        debugPrint(
-            'PicturesScreen: pairs keys: ${pairs.map((p) => p.left).join(', ')}');
-    } catch (_) {}
 
     return GameExitGuard(
       child: Scaffold(
