@@ -1186,7 +1186,8 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
           .replaceAll(RegExp(r'(^-|-$)'), '');
     }
 
-    final slug = _selectedCategory != null ? _slugify(_selectedCategory!) : 'misc';
+    final slug =
+        _selectedCategory != null ? _slugify(_selectedCategory!) : 'misc';
     final key = 'custom-$slug-$idx';
     // New custom sets should start empty (no pre-populated pairs). Store
     // a sentinel value 'empty' so the UI generation code will produce no
@@ -1200,7 +1201,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     // store their name in _customSetNames; otherwise derive the display
     // label from the numeric index in the key (so deleted numbers are reused
     // consistently). Ensure the counter is at least past this idx.
-  if (_customSetCounter <= idx) _customSetCounter = idx + 1;
+    if (_customSetCounter <= idx) _customSetCounter = idx + 1;
     // Ensure a stable default display name for newly created sets so the
     // UI doesn't appear to increment names unexpectedly. Do not overwrite
     // if the user has already set a custom name.
@@ -1433,8 +1434,12 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                   });
                   await _savePersistedCustomSets();
                 }),
-                title: const Text('Match the Pictures',
-                    style: TextStyle(fontFamily: 'Nunito')),
+                title: Text(
+                  _selectedCategory != null
+                      ? 'Match the ${_selectedCategory!}'
+                      : 'Match the Pictures',
+                  style: const TextStyle(fontFamily: 'Nunito'),
+                ),
                 backgroundColor: Colors.green.shade300,
                 elevation: 0,
                 actions: [
@@ -1513,6 +1518,31 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         body: Stack(
           children: [
             const Positioned.fill(child: AnimatedBubblesBackground()),
+            // Floating rounded back button (pillow-like) placed above all content
+            // when a category is selected. Styled as a small white FAB with a
+            // green arrow to match the app theme.
+            // Show floating pillow back button only on the category chooser
+            // screen (when no category is selected). This provides a quick
+            // way to exit the pictures module without an AppBar.
+            if (_selectedCategory == null)
+              Positioned(
+                top: 12,
+                left: 12,
+                child: SafeArea(
+                  child: FloatingActionButton.small(
+                    heroTag: 'matching-pictures-back',
+                    onPressed: () async {
+                      // Close the pictures screen (go back to previous route)
+                      // if possible. Do not modify internal selection state
+                      // because no category is selected here.
+                      Navigator.of(context).maybePop();
+                    },
+                    backgroundColor: Colors.white,
+                    elevation: 6,
+                    child: Icon(Icons.arrow_back, color: Colors.green.shade700),
+                  ),
+                ),
+              ),
             if (_selectedCategory == null)
               Center(
                 child: SingleChildScrollView(
