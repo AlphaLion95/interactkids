@@ -386,18 +386,19 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
       // prefer that stored key so the app reopens the set with saved progress.
       try {
         if (_selectedCategory != null) {
-          final prefsKeys = prefs.getKeys();
-          // Build prefix used by MatchingPicturesMode
-          final prefix = 'matching_pictures_progress_${_selectedCategory!}_';
-          String? foundSuffix;
+          final prefsKeys = prefs.getKeys(); // Get all keys from preferences
+          final prefix =
+              'matching_pictures_progress_${_selectedCategory!}_'; // Prefix for matching pictures
+          String? foundSuffix; // Variable to hold found suffix
           for (final k in prefsKeys) {
+            // Iterate through all keys
             if (k.startsWith(prefix)) {
-              // Ensure there is actually stored data for this key
-              final list = prefs.getStringList(k);
+              // Check if key starts with prefix
+              final list = prefs.getStringList(k); // Get the list for the key
               if (list != null && list.isNotEmpty) {
-                // suffix is everything after the category_
-                foundSuffix = k.substring(prefix.length);
-                break;
+                // Check if list is not empty
+                foundSuffix = k.substring(prefix.length); // Extract suffix
+                break; // Exit loop if found
               }
             }
           }
@@ -575,9 +576,11 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
   Future<void> _openCustomSetEditor(String key) async {
     final result =
         await Navigator.of(context).push<List<String?>>(MaterialPageRoute(
+      // Navigate to custom set editor
       builder: (ctx) => _CustomSetImageEditor(
-        keyId: key,
-        images: List<String>.from(_customSetImages[key] ?? []),
+        // Build editor with key and images
+        keyId: key, // Pass key ID
+        images: List<String>.from(_customSetImages[key] ?? []), // Pass images
       ),
     ));
     if (result != null) {
@@ -720,80 +723,80 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         // size so the category visuals remain consistent.
         Center(
             child: SizedBox(
-                width: 160,
-                height: 160,
+                width: 240,
+                height: 240,
                 child: Image.asset('assets/images/fruits/Fruits/apple.png',
                     fit: BoxFit.contain,
                     errorBuilder: (ctx, e, st) =>
                         const Center(child: Icon(Icons.broken_image))))),
         Center(
             child: SizedBox(
-                width: 160,
-                height: 160,
+                width: 240,
+                height: 240,
                 child: Image.asset('assets/images/fruits/Fruits/banana.png',
                     fit: BoxFit.contain,
                     errorBuilder: (ctx, e, st) =>
                         const Center(child: Icon(Icons.broken_image))))),
         Center(
             child: SizedBox(
-                width: 160,
-                height: 160,
+                width: 240,
+                height: 240,
                 child: Image.asset('assets/images/fruits/Fruits/cherry.png',
                     fit: BoxFit.contain,
                     errorBuilder: (ctx, e, st) =>
                         const Center(child: Icon(Icons.broken_image))))),
         Center(
             child: SizedBox(
-                width: 160,
-                height: 160,
+                width: 240,
+                height: 240,
                 child: Image.asset('assets/images/fruits/Fruits/kiwi.png',
                     fit: BoxFit.contain,
                     errorBuilder: (ctx, e, st) =>
                         const Center(child: Icon(Icons.broken_image))))),
         Center(
             child: SizedBox(
-                width: 160,
-                height: 160,
+                width: 240,
+                height: 240,
                 child: Image.asset('assets/images/fruits/Fruits/lemon.png',
                     fit: BoxFit.contain,
                     errorBuilder: (ctx, e, st) =>
                         const Center(child: Icon(Icons.broken_image))))),
         Center(
             child: SizedBox(
-                width: 160,
-                height: 160,
+                width: 240,
+                height: 240,
                 child: Image.asset('assets/images/fruits/Fruits/orange.png',
                     fit: BoxFit.contain,
                     errorBuilder: (ctx, e, st) =>
                         const Center(child: Icon(Icons.broken_image))))),
         Center(
             child: SizedBox(
-                width: 160,
-                height: 160,
+                width: 240,
+                height: 240,
                 child: Image.asset('assets/images/fruits/Fruits/payaya.png',
                     fit: BoxFit.contain,
                     errorBuilder: (ctx, e, st) =>
                         const Center(child: Icon(Icons.broken_image))))),
         Center(
             child: SizedBox(
-                width: 160,
-                height: 160,
+                width: 240,
+                height: 240,
                 child: Image.asset('assets/images/fruits/Fruits/pineapple.png',
                     fit: BoxFit.contain,
                     errorBuilder: (ctx, e, st) =>
                         const Center(child: Icon(Icons.broken_image))))),
         Center(
             child: SizedBox(
-                width: 160,
-                height: 160,
+                width: 240,
+                height: 240,
                 child: Image.asset('assets/images/fruits/Fruits/strawberry.png',
                     fit: BoxFit.contain,
                     errorBuilder: (ctx, e, st) =>
                         const Center(child: Icon(Icons.broken_image))))),
         Center(
             child: SizedBox(
-                width: 160,
-                height: 160,
+                width: 240,
+                height: 240,
                 child: Image.asset('assets/images/fruits/Fruits/watermelon.png',
                     fit: BoxFit.contain,
                     errorBuilder: (ctx, e, st) =>
@@ -992,7 +995,9 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         }),
         // Diamond (rotated square)
         LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          // Reduce the inner square so that when rotated by 45deg the
+          // rotated bounding box fits the tile. Rotated square bbox = s*sqrt(2).
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9 / math.sqrt(2);
           return Center(
               child: Transform.rotate(
                   angle: 0.785398,
@@ -1331,6 +1336,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         ? <MatchingPair>[]
         : _makePairsForCategory(_selectedCategory!);
     final visuals = <String, Widget>{};
+    // tile sizes used inline below (kept simple after revert)
     final groups = _selectedCategory == null
         ? {}
         : _categoryWidgets[_selectedCategory!] ?? {};
@@ -1350,11 +1356,17 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         for (var i = 0; i < imgs.length; i++) {
           final id = '$_selectedCategory-${_selectedDifficulty!}-$i';
           final path = imgs[i];
+          // Let the outer tile container decide sizing so the image isn't
+          // clipped by the inner fixed box. Use Center + BoxFit.contain so
+          // the image scales to available space without growing it.
           visuals[id] = SizedBox(
-              width: 120,
-              height: 120,
-              child:
-                  Center(child: Image.file(File(path), fit: BoxFit.contain)));
+              width: 136,
+              height: 136,
+              child: Center(
+                  child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Image.file(File(path)),
+              )));
         }
       }
       // We intentionally skip the default groups visuals since the custom
@@ -1373,11 +1385,16 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
             for (var i = 0; i < list.length; i++) {
               final id = '$_selectedCategory-$difficulty-$i';
               final assetPath = list[i];
+              // Keep visuals flexible: don't hardcode inner box size here.
+              final tile = _selectedCategory == 'Shapes' ? 182.0 : 152.0;
               final w = SizedBox(
-                  width: 120,
-                  height: 120,
+                  width: tile,
+                  height: tile,
                   child: Center(
-                      child: Image.asset(assetPath, fit: BoxFit.contain)));
+                      child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: Image.asset(assetPath),
+                  )));
               visuals[id] = w;
             }
             return; // done with this difficulty
@@ -1397,11 +1414,15 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
           for (var i = 0; i < imgs.length; i++) {
             final id = '$_selectedCategory-$difficulty-$i';
             final path = imgs[i];
+            final tile = _selectedCategory == 'Shapes' ? 182.0 : 152.0;
             final w = SizedBox(
-                width: 120,
-                height: 120,
-                child:
-                    Center(child: Image.file(File(path), fit: BoxFit.contain)));
+                width: tile,
+                height: tile,
+                child: Center(
+                    child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: Image.file(File(path)),
+                )));
             visuals[id] = w;
           }
           return;
@@ -1409,13 +1430,9 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         for (var i = 0; i < widgets.length; i++) {
           final id = '$_selectedCategory-$difficulty-$i';
           Widget w = widgets[i];
-          if (difficulty == 'easy') {
-            w = SizedBox(width: 120, height: 120, child: Center(child: w));
-          } else if (difficulty == 'medium') {
-            w = SizedBox(width: 90, height: 90, child: Center(child: w));
-          } else {
-            w = SizedBox(width: 64, height: 64, child: Center(child: w));
-          }
+          // Uniform tile sizing: use the canonical tile size for all items so
+          // shapes and other visuals don't get cropped inconsistently.
+          w = SizedBox(width: 152, height: 152, child: Center(child: w));
           visuals[id] = w;
         }
       });
@@ -1851,7 +1868,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                                 visuals,
                                 // let mode suggest size by difficulty
                                 _selectedDifficulty == 'set1'
-                                    ? 140.0
+                                    ? 220.0
                                     : _selectedDifficulty == 'set2'
                                         ? 96.0
                                         : 96.0,

@@ -390,22 +390,28 @@ class _DragMatchAreaState extends State<DragMatchArea> {
                               child: AnimatedScale(
                                 scale: _animating[item] == true ? 1.2 : 1.0,
                                 duration: const Duration(milliseconds: 220),
-                                child: Container(
-                                  key: _leftKeys[item],
-                                  constraints: BoxConstraints(
-                                    minWidth: 96,
-                                    minHeight: 96,
-                                    maxWidth: 160,
-                                    maxHeight: 160,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: OverflowBox(
-                                    maxWidth: 400,
-                                    maxHeight: 400,
+                                child: Builder(builder: (ctx) {
+                                  // Determine a tight tile size based on the
+                                  // item's difficulty encoded in the id string.
+                                  // These values mirror the SizedBox/FittedBox
+                                  // sizes used where visuals are built.
+                                  // Use a slightly larger tile for Shapes to
+                                  // avoid cropping of rotated/complex shapes.
+                                  double tileSize = 152.0;
+                                  try {
+                                    if (item is String &&
+                                        item.startsWith('Shapes-')) {
+                                      tileSize = 182.0;
+                                    }
+                                  } catch (_) {}
+                                  return Container(
+                                    key: _leftKeys[item],
                                     alignment: Alignment.center,
+                                    constraints: BoxConstraints.tightFor(
+                                        width: tileSize, height: tileSize),
                                     child: widget.buildLeft(item),
-                                  ),
-                                ),
+                                  );
+                                }),
                               ),
                             ),
                           );
@@ -458,22 +464,22 @@ class _DragMatchAreaState extends State<DragMatchArea> {
                               child: AnimatedScale(
                                 scale: _animating[item] == true ? 1.2 : 1.0,
                                 duration: const Duration(milliseconds: 220),
-                                child: Container(
-                                  key: _rightKeys[item],
-                                  constraints: BoxConstraints(
-                                    minWidth: 96,
-                                    minHeight: 96,
-                                    maxWidth: 160,
-                                    maxHeight: 160,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: OverflowBox(
-                                    maxWidth: 400,
-                                    maxHeight: 400,
+                                child: Builder(builder: (ctx) {
+                                  double tileSize = 152.0;
+                                  try {
+                                    if (item is String &&
+                                        item.startsWith('Shapes-')) {
+                                      tileSize = 182.0;
+                                    }
+                                  } catch (_) {}
+                                  return Container(
+                                    key: _rightKeys[item],
                                     alignment: Alignment.center,
+                                    constraints: BoxConstraints.tightFor(
+                                        width: tileSize, height: tileSize),
                                     child: widget.buildRight(item),
-                                  ),
-                                ),
+                                  );
+                                }),
                               ),
                             ),
                           );
@@ -502,7 +508,8 @@ class _DragMatchAreaState extends State<DragMatchArea> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: Colors.orange.withAlpha(46),
+                      // Make hover indicator very subtle so it doesn't block visuals
+                      color: Colors.orange.withAlpha(20),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -539,7 +546,9 @@ class _FreehandPainter extends CustomPainter {
       final strokeW = (maxWidth * (1 - t)) + (minWidth * t);
 
       final alphaFactor = 0.2 + 0.8 * (i / n);
-      final combinedAlpha = (220 * alphaFactor).clamp(0, 255).toInt();
+      // Reduce stroke opacity so the user's images remain visible underneath.
+      // Scale the computed alpha down to around 40% of the original range.
+      final combinedAlpha = (220 * alphaFactor * 0.4).clamp(0, 255).toInt();
       final color = Colors.deepOrange.withAlpha(combinedAlpha);
 
       final paint = Paint()

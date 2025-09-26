@@ -52,7 +52,7 @@ class MatchingPicturesMode extends MatchingGameMode {
     if (item is String) {
       if (visuals != null && visuals!.containsKey(item)) {
         return Container(
-            padding: const EdgeInsets.all(8), child: visuals![item]!);
+            padding: const EdgeInsets.all(4), child: visuals![item]!);
       }
       // If no visual is provided for this key, render a safe placeholder
       // instead of attempting to load an asset by the key name.
