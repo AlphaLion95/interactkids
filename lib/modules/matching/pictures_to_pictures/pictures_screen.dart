@@ -1154,24 +1154,40 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     // Determine base selection from current selection (map custom->base if needed)
     String base = _selectedDifficulty ?? 'set1';
     if (_customSetMapping.containsKey(base)) base = _customSetMapping[base]!;
-    // find the smallest available custom id like custom-3 (reuse deleted numbers)
-    // Reserve 1 and 2 for set1/set2; custom indices start at 3
+    // find the smallest available custom id for THIS CATEGORY (reuse deleted
+    // numbers inside the same category). Reserve 1 and 2 for set1/set2;
+    // custom indices start at 3. Keys must still be globally unique, so we
+    // include a slugified category in the key (custom-<slug>-<n>) to avoid
+    // collisions between different categories while keeping the displayed
+    // label as 'Set N'.
     final used = <int>{};
     for (final k in _customSetMapping.keys) {
-      if (k.startsWith('custom-')) {
-        final parts = k.split('-');
-        if (parts.length > 1) {
-          final n = int.tryParse(parts.last);
-          if (n != null) used.add(n);
-        }
+      // consider only keys that belong to the selected category
+      final catForKey = _customSetCategory[k];
+      if (catForKey == null || _selectedCategory == null) continue;
+      if (catForKey != _selectedCategory) continue;
+      // try to find a trailing number in the key (works for both
+      // old-style 'custom-3' and new-style 'custom-fruits-3')
+      final parts = k.split('-');
+      if (parts.isNotEmpty) {
+        final maybe = parts.last;
+        final n = int.tryParse(maybe);
+        if (n != null) used.add(n);
       }
     }
-    // start searching from 3 upwards for the first free index
     var idx = 3;
-    while (used.contains(idx)) {
-      idx++;
+    while (used.contains(idx)) idx++;
+
+    // slugify the category to produce a globally unique key
+    String _slugify(String s) {
+      return s
+          .toLowerCase()
+          .replaceAll(RegExp(r"[^a-z0-9]+"), '-')
+          .replaceAll(RegExp(r'(^-|-$)'), '');
     }
-    final key = 'custom-$idx';
+
+    final slug = _selectedCategory != null ? _slugify(_selectedCategory!) : 'misc';
+    final key = 'custom-$slug-$idx';
     // New custom sets should start empty (no pre-populated pairs). Store
     // a sentinel value 'empty' so the UI generation code will produce no
     // pairs for this custom set until the user adds images.
@@ -1184,7 +1200,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     // store their name in _customSetNames; otherwise derive the display
     // label from the numeric index in the key (so deleted numbers are reused
     // consistently). Ensure the counter is at least past this idx.
-    if (_customSetCounter <= idx) _customSetCounter = idx + 1;
+  if (_customSetCounter <= idx) _customSetCounter = idx + 1;
     // Ensure a stable default display name for newly created sets so the
     // UI doesn't appear to increment names unexpectedly. Do not overwrite
     // if the user has already set a custom name.
