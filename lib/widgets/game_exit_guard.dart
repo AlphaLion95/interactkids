@@ -61,10 +61,19 @@ class _GameExitGuardState extends State<GameExitGuard> {
 
   @override
   Widget build(BuildContext context) {
-    // PopScope is recommended, but not available on all SDK versions in
-    // this workspace. Use WillPopScope and ignore the deprecation lint
-    // to preserve runtime behavior across SDKs.
-    // ignore: deprecated_member_use
-    return WillPopScope(onWillPop: _onWillPop, child: widget.child);
+    // Use PopScope to handle back navigation and preserve existing behavior.
+    return PopScope<bool>(
+      canPop: true,
+      onPopInvokedWithResult: (bool didPop, bool? result) async {
+        // When a pop is invoked, delegate to the existing handler which
+        // returns whether the pop should proceed.
+        final shouldPop = await _onWillPop();
+        if (shouldPop) {
+          return; // let the pop proceed
+        }
+        // If we vetoed the pop, do nothing; PopScope's canPop will prevent the pop.
+      },
+      child: widget.child,
+    );
   }
 }

@@ -362,40 +362,55 @@ class _DragMatchAreaState extends State<DragMatchArea> {
                         ),
                       );
                     },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: widget.leftItems.map((item) {
-                        return GestureDetector(
-                          onTap: () async {
-                            setState(() {
-                              if (_selectedLeft == item) {
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: widget.leftItems.map((item) {
+                          return GestureDetector(
+                            onTap: () async {
+                              setState(() {
+                                if (_selectedLeft == item) {
+                                  _selectedLeft = null;
+                                } else {
+                                  _selectedLeft = item;
+                                }
+                              });
+                              if (_selectedLeft != null &&
+                                  _selectedRight != null) {
+                                await _attemptProposedMatch(
+                                    _selectedLeft, _selectedRight);
                                 _selectedLeft = null;
-                              } else {
-                                _selectedLeft = item;
+                                _selectedRight = null;
                               }
-                            });
-                            if (_selectedLeft != null &&
-                                _selectedRight != null) {
-                              await _attemptProposedMatch(
-                                  _selectedLeft, _selectedRight);
-                              _selectedLeft = null;
-                              _selectedRight = null;
-                            }
-                          },
-                          child: AnimatedScale(
-                            scale: _animating[item] == true ? 1.2 : 1.0,
-                            duration: const Duration(milliseconds: 220),
-                            child: Container(
-                              key: _leftKeys[item],
-                              margin: const EdgeInsets.symmetric(vertical: 16),
-                              width: 96,
-                              height: 96,
-                              alignment: Alignment.center,
-                              child: widget.buildLeft(item),
+                            },
+                            child: Transform.translate(
+                              offset: const Offset(0, -4.0),
+                              child: AnimatedScale(
+                                scale: _animating[item] == true ? 1.2 : 1.0,
+                                duration: const Duration(milliseconds: 220),
+                                child: Container(
+                                  key: _leftKeys[item],
+                                  constraints: BoxConstraints(
+                                    minWidth: 96,
+                                    minHeight: 96,
+                                    maxWidth: 160,
+                                    maxHeight: 160,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: OverflowBox(
+                                    maxWidth: 400,
+                                    maxHeight: 400,
+                                    alignment: Alignment.center,
+                                    child: widget.buildLeft(item),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        );
-                      }).toList(),
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
                 ),
@@ -415,40 +430,55 @@ class _DragMatchAreaState extends State<DragMatchArea> {
                         ),
                       );
                     },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: widget.rightItems.map((item) {
-                        return GestureDetector(
-                          onTap: () async {
-                            setState(() {
-                              if (_selectedRight == item) {
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: widget.rightItems.map((item) {
+                          return GestureDetector(
+                            onTap: () async {
+                              setState(() {
+                                if (_selectedRight == item) {
+                                  _selectedRight = null;
+                                } else {
+                                  _selectedRight = item;
+                                }
+                              });
+                              if (_selectedLeft != null &&
+                                  _selectedRight != null) {
+                                await _attemptProposedMatch(
+                                    _selectedLeft, _selectedRight);
+                                _selectedLeft = null;
                                 _selectedRight = null;
-                              } else {
-                                _selectedRight = item;
                               }
-                            });
-                            if (_selectedLeft != null &&
-                                _selectedRight != null) {
-                              await _attemptProposedMatch(
-                                  _selectedLeft, _selectedRight);
-                              _selectedLeft = null;
-                              _selectedRight = null;
-                            }
-                          },
-                          child: AnimatedScale(
-                            scale: _animating[item] == true ? 1.2 : 1.0,
-                            duration: const Duration(milliseconds: 220),
-                            child: Container(
-                              key: _rightKeys[item],
-                              margin: const EdgeInsets.symmetric(vertical: 16),
-                              width: 96,
-                              height: 96,
-                              alignment: Alignment.center,
-                              child: widget.buildRight(item),
+                            },
+                            child: Transform.translate(
+                              offset: const Offset(0, -4.0),
+                              child: AnimatedScale(
+                                scale: _animating[item] == true ? 1.2 : 1.0,
+                                duration: const Duration(milliseconds: 220),
+                                child: Container(
+                                  key: _rightKeys[item],
+                                  constraints: BoxConstraints(
+                                    minWidth: 96,
+                                    minHeight: 96,
+                                    maxWidth: 160,
+                                    maxHeight: 160,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: OverflowBox(
+                                    maxWidth: 400,
+                                    maxHeight: 400,
+                                    alignment: Alignment.center,
+                                    child: widget.buildRight(item),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        );
-                      }).toList(),
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
                 ),

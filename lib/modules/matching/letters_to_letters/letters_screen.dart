@@ -88,8 +88,8 @@ class _PillToggleButtonState extends State<PillToggleButton>
                         ],
                       ),
                       child: Center(
-                        child: Text(isLetters ? 'A' : '#',
-                            style: const TextStyle(
+                        child: const Text('A',
+                            style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black)),
                       ),

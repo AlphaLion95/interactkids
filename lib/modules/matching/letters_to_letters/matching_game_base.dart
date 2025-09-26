@@ -65,8 +65,12 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
     super.didUpdateWidget(oldWidget);
     // If the game mode changed (letters <-> numbers etc), reload progress and
     // reset transient state so modes remain independent.
+    // If the game mode changed, the progressKey changed, or the set of
+    // available pairs changed (for example assets were discovered after the
+    // initial build), reload progress and reset transient state.
     if (oldWidget.mode.runtimeType != widget.mode.runtimeType ||
-        oldWidget.mode.progressKey != widget.mode.progressKey) {
+        oldWidget.mode.progressKey != widget.mode.progressKey ||
+        oldWidget.mode.pairs.length != widget.mode.pairs.length) {
       _matchHistory.clear();
       selectedLeft = null;
       selectedRight = null;
@@ -81,7 +85,10 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
   Future<void> _loadProgress() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getStringList(_progressKey);
+    debugPrint(
+        'MatchingGameBase: _loadProgress for key=$_progressKey saved=${saved?.length ?? 0}');
     final allPairs = widget.mode.pairs;
+    debugPrint('MatchingGameBase: mode has ${allPairs.length} pairs');
     matches = {};
     // Build left and right lists. Some modes (letters/numbers) prefer the
     // left column to stay in a stable, sorted order while the right column
@@ -118,7 +125,8 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
         }
       }
     }
-    completed = leftItems.isEmpty && rightItems.isEmpty;
+    // Only consider the game 'completed' when there are pairs to complete.
+    completed = allPairs.isNotEmpty && leftItems.isEmpty && rightItems.isEmpty;
     _showCelebration = completed;
     setState(() {});
   }
@@ -154,7 +162,9 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
       leftItems.remove(selectedLeft);
       rightItems.remove(selectedRight);
       _saveProgress();
-      if (leftItems.isEmpty && rightItems.isEmpty) {
+      if (widget.mode.pairs.isNotEmpty &&
+          leftItems.isEmpty &&
+          rightItems.isEmpty) {
         completed = true;
         _showCelebration = true;
       }
