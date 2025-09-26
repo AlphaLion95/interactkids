@@ -92,15 +92,17 @@ class _CustomSetImageEditorState extends State<_CustomSetImageEditor> {
   Widget build(BuildContext context) {
     // Use PopScope (available on newer Flutter SDKs) to handle back navigation
     // and provide the popped result. This replaces deprecated WillPopScope.
-    return PopScope<List<String>>(
-      canPop: true,
-      onPopInvokedWithResult: (bool didPop, List<String>? result) {
-        // If a back navigation was invoked and not already handled, return the
-        // current images list to the parent by popping with the images list.
-        // If the route was already popped elsewhere, do nothing.
-        if (didPop == false) {
+    return WillPopScope(
+      onWillPop: () async {
+        // Ensure that when the user presses Back we return the current image
+        // list to the caller (there is no separate Save button).
+        if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop(_images);
+          // Returning true allows the pop to complete; we've already supplied
+          // the result via pop above.
+          return true;
         }
+        return true;
       },
       child: Scaffold(
         appBar: AppBar(
