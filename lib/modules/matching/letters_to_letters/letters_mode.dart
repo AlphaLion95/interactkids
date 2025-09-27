@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:interactkids/modules/matching/letters_to_letters/matching_models.dart';
 
 class MatchingLettersMode extends MatchingGameMode {
-  MatchingLettersMode(List<MatchingPair> pairs) : super(pairs);
+  final String progressSuffix;
+
+  /// progressSuffix allows separate progress buckets for variants
+  /// like '_all', '_vowels', '_consonants'. Defaults to empty.
+  MatchingLettersMode(List<MatchingPair> pairs, {this.progressSuffix = ''})
+      : super(pairs);
 
   @override
   bool get shuffleLeft => false;
 
   @override
-  String get progressKey => 'matching_letters_progress';
+  String get progressKey => 'matching_letters_progress$progressSuffix';
   @override
   Widget buildLeftItem(BuildContext context, dynamic item) {
     return _letterTile(item as String, isUpper: true);

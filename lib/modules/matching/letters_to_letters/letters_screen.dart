@@ -6,6 +6,8 @@ import 'package:interactkids/modules/matching/letters_to_letters/matching_game_b
 import 'package:interactkids/modules/matching/letters_to_letters/matching_models.dart';
 import 'letters_mode.dart';
 
+enum _LetterFilter { all, vowels, consonants }
+
 // A small animated pill-like toggle used in the AppBar to switch modes.
 class PillToggleButton extends StatefulWidget {
   final bool showingLetters;
@@ -87,8 +89,8 @@ class _PillToggleButtonState extends State<PillToggleButton>
                           ),
                         ],
                       ),
-                      child: Center(
-                        child: const Text('A',
+                      child: const Center(
+                        child: Text('A',
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black)),
@@ -123,12 +125,23 @@ class MatchingLettersScreen extends StatefulWidget {
 
 class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
   bool _showingLetters = true;
+  // Filter for letters: all, vowels or consonants
+  _LetterFilter _letterFilter = _LetterFilter.all;
 
-  List<MatchingPair> _letterPairs() => List.generate(26, (i) {
-        final upper = String.fromCharCode(65 + i);
-        final lower = String.fromCharCode(97 + i);
-        return MatchingPair(left: upper, right: lower);
-      });
+  List<MatchingPair> _letterPairs() {
+    const vowels = {'A', 'E', 'I', 'O', 'U'};
+    final all = List.generate(26, (i) {
+      final upper = String.fromCharCode(65 + i);
+      final lower = String.fromCharCode(97 + i);
+      return MatchingPair(left: upper, right: lower);
+    });
+    if (_letterFilter == _LetterFilter.all) return all;
+    if (_letterFilter == _LetterFilter.vowels) {
+      return all.where((p) => vowels.contains(p.left)).toList();
+    }
+    // consonants
+    return all.where((p) => !vowels.contains(p.left)).toList();
+  }
 
   List<MatchingPair> _numberPairs() {
     // Create numeric pairs 1..100. Left shows ordered digits, right shows the
@@ -155,11 +168,7 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenW = MediaQuery.of(context).size.width;
-    final pillMaxWidth = screenW * 0.45;
-    // Shift the pill to the right by a small responsive amount (12% of
-    // screen width) but clamp it so very small screens don't break layout.
-    final extraShift = (screenW * 0.18).clamp(8.0, 72.0);
+    // Responsive screen width used to size the filter area.
     // pairs are provided by helper methods depending on selected mode
 
     return GameExitGuard(
@@ -173,7 +182,7 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
               color: Colors.blue.shade300,
               child: Row(
                 children: [
-                  BackButton(color: Colors.white),
+                  const BackButton(color: Colors.white),
                   const SizedBox(width: 6),
                   // Put the Match label and pill into an Expanded sub-row so they
                   // share the available space and can ellipsize/contract safely.
@@ -181,35 +190,66 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.max,
                       children: [
-                        // Label shows fully when possible; Spacer pushes the pill
-                        // toward the right without stealing the label's intrinsic
-                        // width. We keep a small right-gap (extraShift) so the
-                        // pill isn't flush with the edge.
-                        Padding(
-                          padding: const EdgeInsets.only(right: 6.0),
-                          child: Text(
-                            _showingLetters ? 'Match Letters' : 'Match Numbers',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        const Spacer(),
-                        SizedBox(width: extraShift),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: pillMaxWidth),
+                        // When showing letters, present a small filter (Vowels/Consonants/All)
+                        // otherwise keep the original 'Match Numbers' label.
+                        // Filter area: allow the button row to occupy remaining
+                        // space but shrink gracefully; make it scrollable when
+                        // it doesn't fit.
+                        Flexible(
+                          fit: FlexFit.loose,
                           child: Padding(
                             padding: const EdgeInsets.only(right: 6.0),
-                            child: PillToggleButton(
-                              showingLetters: !_showingLetters,
-                              onToggle: () {
-                                setState(() {
-                                  _showingLetters = !_showingLetters;
-                                });
-                              },
+                            child: _showingLetters
+                                ? SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        _buildFilterButton(context,
+                                            _LetterFilter.vowels, 'Vowels'),
+                                        const SizedBox(width: 6),
+                                        _buildFilterButton(
+                                            context,
+                                            _LetterFilter.consonants,
+                                            'Consonants'),
+                                      ],
+                                    ),
+                                  )
+                                : Text(
+                                    'Match Numbers',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600),
+                                  ),
+                          ),
+                        ),
+                        // Small fixed slot for the 'All' button so it's always
+                        // visible next to the pill toggle.
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: _buildFilterButton(
+                              context, _LetterFilter.all, 'All'),
+                        ),
+                        // Fixed area for the pill toggle: ensure it has a sensible
+                        // minimum width so the label (e.g. 'Numbers') is visible
+                        // even on very narrow screens.
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6.0),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minWidth: 96),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: PillToggleButton(
+                                showingLetters: !_showingLetters,
+                                onToggle: () {
+                                  setState(() {
+                                    _showingLetters = !_showingLetters;
+                                  });
+                                },
+                              ),
                             ),
                           ),
                         ),
@@ -226,11 +266,45 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
             const Positioned.fill(child: AnimatedBubblesBackground()),
             MatchingGameBase(
               mode: _showingLetters
-                  ? MatchingLettersMode(_letterPairs())
+                  ? MatchingLettersMode(
+                      _letterPairs(),
+                      progressSuffix: _letterFilter == _LetterFilter.all
+                          ? '_all'
+                          : _letterFilter == _LetterFilter.vowels
+                              ? '_vowels'
+                              : '_consonants',
+                    )
                   : MatchingNumbersMode(_numberPairs()),
               title: '',
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterButton(
+      BuildContext context, _LetterFilter f, String label) {
+    final selected = _letterFilter == f;
+    return Material(
+      color: selected ? Colors.white.withOpacity(0.12) : Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          setState(() {
+            _letterFilter = f;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.18)),
+          ),
+          child: Text(label,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600)),
         ),
       ),
     );

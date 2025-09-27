@@ -61,9 +61,11 @@ void main(List<String> args) {
 
   print('\nSummary:');
   print('Valid files (${valid.length}):');
-  for (final v in valid)
-    print(' - ${v.replaceFirst(Directory.current.path + '\\', '')}');
+  for (final v in valid) {
+    print(' - ${v.replaceFirst('${Directory.current.path}\\', '')}');
+  }
   print('\nInvalid files (${invalid.length}):');
-  for (final iv in invalid)
-    print(' - ${iv.replaceFirst(Directory.current.path + '\\', '')}');
+  for (final iv in invalid) {
+    print(' - ${iv.replaceFirst('${Directory.current.path}\\', '')}');
+  }
 }

@@ -11,7 +11,7 @@ void main(List<String> args) {
   final outRoot = Directory('$root/assets/processed');
   if (!outRoot.existsSync()) outRoot.createSync(recursive: true);
 
-  final maxDim = 1200; // max width/height after resize
+  const maxDim = 1200; // max width/height after resize
 
   for (final entry in work.entries) {
     final cat = entry.key;

@@ -304,7 +304,7 @@ class MatchingPicturesScreen extends StatefulWidget {
 class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
   String? _selectedCategory;
   String? _selectedDifficulty;
-  GlobalKey<MatchingGameBaseState> _gameKey =
+  final GlobalKey<MatchingGameBaseState> _gameKey =
       GlobalKey<MatchingGameBaseState>();
   // Map of custom set keys to their base selection ('set1'|'set2'|'all')
   final Map<String, String> _customSetMapping = {};
@@ -632,6 +632,10 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
 
   // Cached lists of asset paths discovered in AssetManifest.json
   final Map<String, List<String>> _assetsByFolder = {};
+  // Cache of ImageProvider instances keyed by path to avoid recreating
+  // AssetImage/FileImage instances repeatedly which triggers re-decoding
+  // and can cause brief flicker when switching tabs.
+  final Map<String, ImageProvider> _imageProviderCache = {};
 
   Future<void> _loadAssetLists() async {
     try {
@@ -768,17 +772,19 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
             .toList();
         debugPrint(
             'PicturesScreen: assetManifest fruits/cartoon count=${cartoonKeys.length}');
-        if (cartoonKeys.isNotEmpty)
+        if (cartoonKeys.isNotEmpty) {
           debugPrint(
               'PicturesScreen: assetManifest fruits/cartoon sample: ${cartoonKeys.take(12).join(', ')}');
+        }
         final vegCartoonKeys = manifestMap.keys
             .where((k) => k.toLowerCase().contains('/vegetables/cartoon/'))
             .toList();
         debugPrint(
             'PicturesScreen: assetManifest vegetables/cartoon count=${vegCartoonKeys.length}');
-        if (vegCartoonKeys.isNotEmpty)
+        if (vegCartoonKeys.isNotEmpty) {
           debugPrint(
               'PicturesScreen: assetManifest vegetables/cartoon sample: ${vegCartoonKeys.take(12).join(', ')}');
+        }
       } catch (e) {
         debugPrint('PicturesScreen: failed to sample manifest keys: $e');
       }
@@ -792,17 +798,27 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         _assetsByFolder['shapes_cartoon'] = shapesCartoon;
         // Do not mark assetsLoaded yet; we will precache cartoon images below
       });
-      // Precache discovered cartoon assets to avoid a visible flash when
-      // Set 2 is selected. Limit to categories we actually discovered.
+      // Precache discovered assets (cartoons + base images) to avoid a
+      // visible flash when switching tabs or when Set 2 is selected.
+      // Limit to categories we actually discovered.
       final toPrecache = <String>[];
+      // Include both cartoons and the base images so Set 1 and Set 2 are
+      // available without re-decoding on demand.
+      toPrecache.addAll(fruits);
       toPrecache.addAll(fruitsCartoon);
+      toPrecache.addAll(vegetables);
       toPrecache.addAll(vegetablesCartoon);
+      toPrecache.addAll(shapes);
       toPrecache.addAll(shapesCartoon);
       try {
         final futures = <Future<void>>[];
         for (final p in toPrecache) {
           try {
-            futures.add(precacheImage(AssetImage(p), context));
+            // Create or reuse a cached ImageProvider for this path so we
+            // don't recreate AssetImage instances on every build which
+            // forces re-decode and can cause visual flicker.
+            final provider = _imageProviderCache[p] ??= AssetImage(p);
+            futures.add(precacheImage(provider, context));
           } catch (_) {}
         }
         // await all precache tasks but guard with timeout to avoid hangs
@@ -1335,9 +1351,9 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     }
     // Resolve the user's selection (map custom -> base) so we can make
     // decisions like whether to return early for Set 1 or continue for All.
-    String _resolvedSelection = _selectedDifficulty ?? 'all';
-    if (_customSetMapping.containsKey(_resolvedSelection)) {
-      _resolvedSelection = _customSetMapping[_resolvedSelection]!;
+    String resolvedSelection = _selectedDifficulty ?? 'all';
+    if (_customSetMapping.containsKey(resolvedSelection)) {
+      resolvedSelection = _customSetMapping[resolvedSelection]!;
     }
 
     // If 'easy' visuals are visible for the current selection (Set 1)
@@ -1353,7 +1369,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         // only Set 1 (easy) is shown. If the selection is 'all' or set2,
         // continue to build pairs for the other difficulties so All shows
         // everything.
-        if (_resolvedSelection == 'set1') {
+        if (resolvedSelection == 'set1') {
           return items.map((id) => MatchingPair(left: id, right: id)).toList();
         }
       }
@@ -1375,7 +1391,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
               category == 'Vegetables' ||
               category == 'Shapes') &&
           (difficulty == 'medium' || difficulty == 'hard')) {
-        final cartoons = _assetsByFolder[category.toLowerCase() + '_cartoon'];
+        final cartoons = _assetsByFolder['${category.toLowerCase()}_cartoon'];
         if (cartoons != null && cartoons.isNotEmpty) {
           // Interleave assets between medium and hard so both sets receive
           // different images (medium: even indices, hard: odd indices).
@@ -1409,13 +1425,16 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     // images for this category so they also appear in the All tab.
     try {
       String selected = _selectedDifficulty ?? 'all';
-      if (_customSetMapping.containsKey(selected))
+      if (_customSetMapping.containsKey(selected)) {
         selected = _customSetMapping[selected]!;
+      }
       if (selected == 'all') {
         for (final key in _customSetImages.keys) {
           // Only include custom sets for this category (or those without a category)
           if (_customSetCategory.containsKey(key) &&
-              _customSetCategory[key] != category) continue;
+              _customSetCategory[key] != category) {
+            continue;
+          }
           final imgs = _customSetImages[key];
           if (imgs == null || imgs.isEmpty) continue;
           for (var i = 0; i < imgs.length; i++) {
@@ -1483,8 +1502,9 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     // can prefer cartoons.
     if (_selectedDifficulty == null) return false;
     String resolved = _selectedDifficulty!;
-    if (_customSetMapping.containsKey(resolved))
+    if (_customSetMapping.containsKey(resolved)) {
       resolved = _customSetMapping[resolved]!;
+    }
     if (resolved != 'set2' && resolved != 'all') return false;
     if (_selectedCategory == null) return false;
     // Categories that prefer cartoons for set2
@@ -1546,10 +1566,12 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
       }
     }
     var idx = 3;
-    while (used.contains(idx)) idx++;
+    while (used.contains(idx)) {
+      idx++;
+    }
 
     // slugify the category to produce a globally unique key
-    String _slugify(String s) {
+    String slugify(String s) {
       return s
           .toLowerCase()
           .replaceAll(RegExp(r"[^a-z0-9]+"), '-')
@@ -1557,7 +1579,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     }
 
     final slug =
-        _selectedCategory != null ? _slugify(_selectedCategory!) : 'misc';
+        _selectedCategory != null ? slugify(_selectedCategory!) : 'misc';
     final key = 'custom-$slug-$idx';
     // New custom sets should start empty (no pre-populated pairs). Store
     // a sentinel value 'empty' so the UI generation code will produce no
@@ -1730,13 +1752,18 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
           // Let the outer tile container decide sizing so the image isn't
           // clipped by the inner fixed box. Use Center + BoxFit.contain so
           // the image scales to available space without growing it.
+          final provider = _imageProviderCache[path] ??= FileImage(File(path));
           visuals[id] = SizedBox(
               width: 136,
               height: 136,
               child: Center(
                   child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Image.file(File(path)),
+                child: Image(
+                    image: provider,
+                    gaplessPlayback: true,
+                    errorBuilder: (ctx, e, st) =>
+                        const Center(child: Icon(Icons.broken_image))),
               )));
         }
       }
@@ -1758,14 +1785,21 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
               final assetPath = list[i];
               // Keep visuals flexible: don't hardcode inner box size here.
               final tile = _selectedCategory == 'Shapes' ? 182.0 : 152.0;
+              // Use cached ImageProvider if available to avoid re-decoding
+              final provider =
+                  _imageProviderCache[assetPath] ??= AssetImage(assetPath);
               final w = SizedBox(
                   width: tile,
                   height: tile,
                   child: Center(
-                      child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: Image.asset(assetPath),
-                  )));
+                    child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: Image(
+                            image: provider,
+                            gaplessPlayback: true,
+                            errorBuilder: (ctx, e, st) =>
+                                const Center(child: Icon(Icons.broken_image)))),
+                  ));
               visuals[id] = w;
             }
             return; // done with this difficulty
@@ -1786,13 +1820,19 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
             final id = '$_selectedCategory-$difficulty-$i';
             final path = imgs[i];
             final tile = _selectedCategory == 'Shapes' ? 182.0 : 152.0;
+            final provider =
+                _imageProviderCache[path] ??= FileImage(File(path));
             final w = SizedBox(
                 width: tile,
                 height: tile,
                 child: Center(
                     child: FittedBox(
                   fit: BoxFit.contain,
-                  child: Image.file(File(path)),
+                  child: Image(
+                      image: provider,
+                      gaplessPlayback: true,
+                      errorBuilder: (ctx, e, st) =>
+                          const Center(child: Icon(Icons.broken_image))),
                 )));
             visuals[id] = w;
           }
@@ -1826,14 +1866,17 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                 final assetIndex = mediumIndices[idx];
                 final id = '$_selectedCategory-$difficulty-$idx';
                 final assetPath = cartoons[assetIndex];
-                final tile = 96.0; // smaller tiles for Set 2
+                const tile = 96.0; // smaller tiles for Set 2
                 final w = SizedBox(
                     width: tile,
                     height: tile,
                     child: Center(
                         child: FittedBox(
                       fit: BoxFit.contain,
-                      child: Image.asset(assetPath),
+                      child: Image.asset(assetPath,
+                          gaplessPlayback: true,
+                          errorBuilder: (ctx, e, st) =>
+                              const Center(child: Icon(Icons.broken_image))),
                     )));
                 visuals[id] = w;
               }
@@ -1842,14 +1885,20 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                 final assetIndex = hardIndices[idx];
                 final id = '$_selectedCategory-$difficulty-$idx';
                 final assetPath = cartoons[assetIndex];
-                final tile = 96.0; // smaller tiles for Set 2
+                const tile = 96.0; // smaller tiles for Set 2
+                final provider =
+                    _imageProviderCache[assetPath] ??= AssetImage(assetPath);
                 final w = SizedBox(
                     width: tile,
                     height: tile,
                     child: Center(
                         child: FittedBox(
                       fit: BoxFit.contain,
-                      child: Image.asset(assetPath),
+                      child: Image(
+                          image: provider,
+                          gaplessPlayback: true,
+                          errorBuilder: (ctx, e, st) =>
+                              const Center(child: Icon(Icons.broken_image))),
                     )));
                 visuals[id] = w;
               }
@@ -1857,7 +1906,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
             // Log that we are using cartoons for this category/difficulty.
             try {
               debugPrint(
-                  'PicturesScreen: using cartoons for ${_selectedCategory} $difficulty (total=${cartoons.length}, medium=${mediumIndices.length}, hard=${hardIndices.length})');
+                  'PicturesScreen: using cartoons for $_selectedCategory $difficulty (total=${cartoons.length}, medium=${mediumIndices.length}, hard=${hardIndices.length})');
             } catch (_) {}
             usedCartoons = true;
           }
@@ -1881,13 +1930,16 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     // the All tab shows uploaded images as additional tabs.
     try {
       String selected = _selectedDifficulty ?? 'all';
-      if (_customSetMapping.containsKey(selected))
+      if (_customSetMapping.containsKey(selected)) {
         selected = _customSetMapping[selected]!;
+      }
       if (selected == 'all') {
         for (final key in _customSetImages.keys) {
           // Only include custom sets that belong to this category (or have no category)
           if (_customSetCategory.containsKey(key) &&
-              _customSetCategory[key] != _selectedCategory) continue;
+              _customSetCategory[key] != _selectedCategory) {
+            continue;
+          }
           final imgs = _customSetImages[key];
           if (imgs == null || imgs.isEmpty) continue;
           for (var i = 0; i < imgs.length; i++) {
@@ -1895,14 +1947,17 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
             if (visuals.containsKey(id)) continue; // avoid duplicate
             final path = imgs[i];
             // Use same sizing as when custom set is selected directly
-            final tile = 136.0;
+            const tile = 136.0;
             visuals[id] = SizedBox(
                 width: tile,
                 height: tile,
                 child: Center(
                     child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Image.file(File(path)),
+                  child: Image.file(File(path),
+                      gaplessPlayback: true,
+                      errorBuilder: (ctx, e, st) =>
+                          const Center(child: Icon(Icons.broken_image))),
                 )));
           }
         }
@@ -1912,12 +1967,14 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     // Debug: log visuals and pairs to detect missing or mismatched IDs
     try {
       debugPrint('PicturesScreen: visuals built count=${visuals.length}');
-      if (visuals.length <= 48)
+      if (visuals.length <= 48) {
         debugPrint('PicturesScreen: visuals keys: ${visuals.keys.join(', ')}');
+      }
       debugPrint('PicturesScreen: pairs count=${pairs.length}');
-      if (pairs.length <= 48)
+      if (pairs.length <= 48) {
         debugPrint(
             'PicturesScreen: pairs keys: ${pairs.map((p) => p.left).join(', ')}');
+      }
     } catch (_) {}
 
     return GameExitGuard(
@@ -2069,11 +2126,11 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                           // Use a compact, evenly padded multi-swatch visual so the
                           // chooser card's left/right margins match Fruits (84px visual)
                           color = Colors.purple.shade400;
-                          visual = SizedBox(
+                          visual = const SizedBox(
                             width: 84,
                             height: 84,
                             child: Row(
-                              children: const [
+                              children: [
                                 Expanded(
                                     child: ColoredBox(
                                         color: Colors.red, child: SizedBox())),
@@ -2094,7 +2151,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                         case 'Shapes':
                         default:
                           color = Colors.indigo.shade400;
-                          visual = Center(
+                          visual = const Center(
                               child: Icon(Icons.change_history,
                                   size: 48, color: Colors.white));
                       }
