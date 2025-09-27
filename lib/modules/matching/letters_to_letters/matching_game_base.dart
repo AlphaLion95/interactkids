@@ -315,22 +315,45 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
                                                   const EdgeInsets.symmetric(
                                                       vertical: 8),
                                               decoration: BoxDecoration(
-                                                // Always keep border transparent to avoid
-                                                // the orange focus ring when tapped.
+                                                // Show a stronger border/glow when the
+                                                // tile is selected so it reads on bright
+                                                // screens. Default stays transparent.
                                                 border: Border.all(
-                                                  color: Colors.transparent,
-                                                  width: 3,
+                                                  color: selectedLeft == item
+                                                      ? Colors
+                                                          .deepOrange.shade700
+                                                      : Colors.transparent,
+                                                  width: selectedLeft == item
+                                                      ? 4
+                                                      : 3,
                                                 ),
                                                 borderRadius:
                                                     BorderRadius.circular(12),
+                                                boxShadow: selectedLeft == item
+                                                    ? [
+                                                        BoxShadow(
+                                                          color: Colors
+                                                              .deepOrange
+                                                              .withAlpha(60),
+                                                          blurRadius: 12,
+                                                          offset: const Offset(
+                                                              0, 6),
+                                                        ),
+                                                      ]
+                                                    : [],
                                               ),
                                               child: selectedLeft == item
                                                   ? AnimatedBouncingButton(
                                                       width: 90,
                                                       height: 90,
-                                                      child: widget.mode
-                                                          .buildLeftItem(
-                                                              context, item),
+                                                      child: (widget.mode
+                                                              .buildSelectedLeftItem(
+                                                                  context,
+                                                                  item) ??
+                                                          widget.mode
+                                                              .buildLeftItem(
+                                                                  context,
+                                                                  item)),
                                                     )
                                                   : widget.mode.buildLeftItem(
                                                       context, item),
@@ -368,22 +391,45 @@ class MatchingGameBaseState extends State<MatchingGameBase> {
                                                   const EdgeInsets.symmetric(
                                                       vertical: 8),
                                               decoration: BoxDecoration(
-                                                // Keep border transparent to avoid
-                                                // orange focus ring on tap.
+                                                // Show a stronger border/glow when the
+                                                // tile is selected so it reads on bright
+                                                // screens. Default stays transparent.
                                                 border: Border.all(
-                                                  color: Colors.transparent,
-                                                  width: 3,
+                                                  color: selectedRight == item
+                                                      ? Colors
+                                                          .deepOrange.shade700
+                                                      : Colors.transparent,
+                                                  width: selectedRight == item
+                                                      ? 4
+                                                      : 3,
                                                 ),
                                                 borderRadius:
                                                     BorderRadius.circular(12),
+                                                boxShadow: selectedRight == item
+                                                    ? [
+                                                        BoxShadow(
+                                                          color: Colors
+                                                              .deepOrange
+                                                              .withAlpha(60),
+                                                          blurRadius: 12,
+                                                          offset: const Offset(
+                                                              0, 6),
+                                                        ),
+                                                      ]
+                                                    : [],
                                               ),
                                               child: selectedRight == item
                                                   ? AnimatedBouncingButton(
                                                       width: 90,
                                                       height: 90,
-                                                      child: widget.mode
-                                                          .buildRightItem(
-                                                              context, item),
+                                                      child: (widget.mode
+                                                              .buildSelectedRightItem(
+                                                                  context,
+                                                                  item) ??
+                                                          widget.mode
+                                                              .buildRightItem(
+                                                                  context,
+                                                                  item)),
                                                     )
                                                   : widget.mode.buildRightItem(
                                                       context, item),

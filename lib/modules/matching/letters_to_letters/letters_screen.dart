@@ -8,6 +8,8 @@ import 'letters_mode.dart';
 
 enum _LetterFilter { all, vowels, consonants }
 
+enum _NumberFilter { all, even, odd }
+
 // A small animated pill-like toggle used in the AppBar to switch modes.
 class PillToggleButton extends StatefulWidget {
   final bool showingLetters;
@@ -76,8 +78,8 @@ class _PillToggleButtonState extends State<PillToggleButton>
                   children: [
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 350),
-                      width: 36,
-                      height: 36,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
@@ -89,9 +91,9 @@ class _PillToggleButtonState extends State<PillToggleButton>
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Text('A',
-                            style: TextStyle(
+                      child: Center(
+                        child: Text(widget.showingLetters ? 'A' : '#',
+                            style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black)),
                       ),
@@ -127,6 +129,8 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
   bool _showingLetters = true;
   // Filter for letters: all, vowels or consonants
   _LetterFilter _letterFilter = _LetterFilter.all;
+  // Filter for numbers: all, even or odd
+  _NumberFilter _numberFilter = _NumberFilter.all;
 
   List<MatchingPair> _letterPairs() {
     const vowels = {'A', 'E', 'I', 'O', 'U'};
@@ -144,10 +148,19 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
   }
 
   List<MatchingPair> _numberPairs() {
-    // Create numeric pairs 1..100. Left shows ordered digits, right shows the
-    // matching digits (MatchingGameBase will randomize the right column).
-    return List.generate(
+    // Create numeric pairs based on the selected number filter.
+    // Left shows ordered digits, right shows the matching digits
+    // (MatchingGameBase will randomize the right column).
+    final all = List.generate(
         100, (i) => MatchingPair(left: '${i + 1}', right: '${i + 1}'));
+    switch (_numberFilter) {
+      case _NumberFilter.even:
+        return all.where((p) => int.tryParse(p.left)! % 2 == 0).toList();
+      case _NumberFilter.odd:
+        return all.where((p) => int.tryParse(p.left)! % 2 == 1).toList();
+      case _NumberFilter.all:
+        return all;
+    }
   }
 
   @override
@@ -178,23 +191,24 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
           preferredSize: const Size.fromHeight(64),
           child: SafeArea(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               color: Colors.blue.shade300,
               child: Row(
                 children: [
                   const BackButton(color: Colors.white),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   // Put the Match label and pill into an Expanded sub-row so they
                   // share the available space and can ellipsize/contract safely.
                   Expanded(
                     child: Row(
                       mainAxisSize: MainAxisSize.max,
                       children: [
-                        // When showing letters, present a small filter (Vowels/Consonants/All)
-                        // otherwise keep the original 'Match Numbers' label.
-                        // Filter area: allow the button row to occupy remaining
-                        // space but shrink gracefully; make it scrollable when
-                        // it doesn't fit.
+                        // When showing letters, present Vowels/Consonants; when
+                        // showing numbers, present Even/Odd. Keep the primary
+                        // 'All' button in a small fixed slot so it's always
+                        // visible. The variable buttons are scrollable on the
+                        // left to avoid any right-side overflow hiding the
+                        // pill toggle.
                         Flexible(
                           fit: FlexFit.loose,
                           child: Padding(
@@ -207,7 +221,7 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
                                       children: [
                                         _buildFilterButton(context,
                                             _LetterFilter.vowels, 'Vowels'),
-                                        const SizedBox(width: 6),
+                                        const SizedBox(width: 2),
                                         _buildFilterButton(
                                             context,
                                             _LetterFilter.consonants,
@@ -215,31 +229,39 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
                                       ],
                                     ),
                                   )
-                                : Text(
-                                    'Match Numbers',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600),
+                                : SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        _buildNumberFilterButton(context,
+                                            _NumberFilter.even, 'Even'),
+                                        const SizedBox(width: 6),
+                                        _buildNumberFilterButton(
+                                            context, _NumberFilter.odd, 'Odd'),
+                                      ],
+                                    ),
                                   ),
                           ),
                         ),
                         // Small fixed slot for the 'All' button so it's always
                         // visible next to the pill toggle.
                         Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: _buildFilterButton(
-                              context, _LetterFilter.all, 'All'),
+                          padding: const EdgeInsets.only(right: 4.0),
+                          child: _showingLetters
+                              ? _buildFilterButton(
+                                  context, _LetterFilter.all, 'All')
+                              : _buildNumberFilterButton(
+                                  context, _NumberFilter.all, 'All'),
                         ),
-                        // Fixed area for the pill toggle: ensure it has a sensible
-                        // minimum width so the label (e.g. 'Numbers') is visible
-                        // even on very narrow screens.
+                        // Fixed area for the pill toggle: slightly reduce the
+                        // minimum width to allow more space for the left
+                        // scrollable filter buttons (prevents consonants from
+                        // being clipped on small screens).
                         Padding(
-                          padding: const EdgeInsets.only(right: 6.0),
+                          padding: const EdgeInsets.only(right: 4.0),
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(minWidth: 96),
+                            constraints: const BoxConstraints(minWidth: 64),
                             child: Align(
                               alignment: Alignment.centerRight,
                               child: PillToggleButton(
@@ -274,7 +296,12 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
                               ? '_vowels'
                               : '_consonants',
                     )
-                  : MatchingNumbersMode(_numberPairs()),
+                  : MatchingNumbersMode(_numberPairs(),
+                      progressSuffix: _numberFilter == _NumberFilter.all
+                          ? '_all'
+                          : _numberFilter == _NumberFilter.even
+                              ? '_even'
+                              : '_odd'),
               title: '',
             ),
           ],
@@ -286,8 +313,15 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
   Widget _buildFilterButton(
       BuildContext context, _LetterFilter f, String label) {
     final selected = _letterFilter == f;
+    final theme = Theme.of(context);
+    // Choose colors that stay readable on the AppBar background.
+    final bgSelected = Colors.white; // solid white for selected
+    final fgSelected = theme.primaryColor; // primary color for selected text
+    final fgUnselected = Colors.white; // keep unselected text white
+    final borderColor = Colors.white.withOpacity(0.18);
+
     return Material(
-      color: selected ? Colors.white.withOpacity(0.12) : Colors.transparent,
+      color: selected ? bgSelected : Colors.transparent,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -297,14 +331,65 @@ class _MatchingLettersScreenState extends State<MatchingLettersScreen> {
           });
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.18)),
+            border: Border.all(color: borderColor),
           ),
           child: Text(label,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  color: selected ? fgSelected : fgUnselected,
+                  fontWeight: FontWeight.w700,
+                  shadows: selected
+                      ? null
+                      : [
+                          Shadow(
+                              color: Colors.black.withOpacity(0.25),
+                              offset: const Offset(0, 1),
+                              blurRadius: 1)
+                        ])),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNumberFilterButton(
+      BuildContext context, _NumberFilter f, String label) {
+    final selected = _numberFilter == f;
+    final theme = Theme.of(context);
+    final bgSelected = Colors.white;
+    final fgSelected = theme.primaryColor;
+    final fgUnselected = Colors.white;
+    final borderColor = Colors.white.withOpacity(0.18);
+
+    return Material(
+      color: selected ? bgSelected : Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          setState(() {
+            _numberFilter = f;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor),
+          ),
+          child: Text(label,
+              style: TextStyle(
+                  color: selected ? fgSelected : fgUnselected,
+                  fontWeight: FontWeight.w700,
+                  shadows: selected
+                      ? null
+                      : [
+                          Shadow(
+                              color: Colors.black.withOpacity(0.25),
+                              offset: const Offset(0, 1),
+                              blurRadius: 1)
+                        ])),
         ),
       ),
     );

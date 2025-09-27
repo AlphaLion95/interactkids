@@ -32,6 +32,11 @@ abstract class MatchingGameMode {
   Widget buildLeftItem(BuildContext context, dynamic item);
   Widget buildRightItem(BuildContext context, dynamic item);
 
+  /// Optional builders used when an item is selected. Return null to use the
+  /// default builders instead.
+  Widget? buildSelectedLeftItem(BuildContext context, dynamic item) => null;
+  Widget? buildSelectedRightItem(BuildContext context, dynamic item) => null;
+
   /// Whether the matched-tray UI should be shown for this mode.
   /// Some modes (like picture-to-picture) prefer a direct connect UI.
   bool get showMatchedTray => true;

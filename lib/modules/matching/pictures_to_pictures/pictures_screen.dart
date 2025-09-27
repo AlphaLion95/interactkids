@@ -206,34 +206,7 @@ class _CustomSetImageEditorState extends State<_CustomSetImageEditor> {
   }
 }
 
-class _TriangleBadge extends StatelessWidget {
-  final Color color;
-  final double size;
-  const _TriangleBadge({this.color = Colors.orange, this.size = 100});
-  @override
-  Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: _TriangleClipper(),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [
-            color.withAlpha((0.9 * 255).round()),
-            color.withAlpha((0.6 * 255).round())
-          ]),
-          boxShadow: [
-            BoxShadow(
-                color: color.withAlpha(60),
-                blurRadius: 8,
-                offset: const Offset(0, 4))
-          ],
-        ),
-        child: null,
-      ),
-    );
-  }
-}
+// _TriangleBadge removed — Set 1 Colors are now plain circular tiles.
 
 // Themed, animated category card used on the initial selection screen.
 class _CategoryCard extends StatefulWidget {
@@ -318,6 +291,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
   bool _assetsLoaded = false;
   // Map custom set key -> list of local file paths for images
   final Map<String, List<String>> _customSetImages = {};
+  // ...existing code...
 
   @override
   void initState() {
@@ -847,478 +821,630 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
   }
 
   // Widgets grouped by difficulty: easy (large), medium, hard (small)
-  // Made non-const so we can use richer, non-const decorated widgets for easy shapes
-  static final Map<String, Map<String, List<Widget>>> _categoryWidgets = {
-    'Fruits': {
-      'easy': [
-        // Use real fruit images from assets for the Easy level. Place your
-        // images in assets/images/fruits/ (e.g. apple.png, banana.png).
-        // Wrap in Center to match other category visuals sizing.
-        // Use the uploaded real fruit images which live under
-        // assets/images/fruits/Fruits/ (user-uploaded). Keep a fixed
-        // size so the category visuals remain consistent.
-        Center(
-            child: SizedBox(
-                width: 240,
-                height: 240,
-                child: Image.asset('assets/images/fruits/Fruits/apple.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (ctx, e, st) =>
-                        const Center(child: Icon(Icons.broken_image))))),
-        Center(
-            child: SizedBox(
-                width: 240,
-                height: 240,
-                child: Image.asset('assets/images/fruits/Fruits/banana.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (ctx, e, st) =>
-                        const Center(child: Icon(Icons.broken_image))))),
-        Center(
-            child: SizedBox(
-                width: 240,
-                height: 240,
-                child: Image.asset('assets/images/fruits/Fruits/cherry.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (ctx, e, st) =>
-                        const Center(child: Icon(Icons.broken_image))))),
-        Center(
-            child: SizedBox(
-                width: 240,
-                height: 240,
-                child: Image.asset('assets/images/fruits/Fruits/kiwi.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (ctx, e, st) =>
-                        const Center(child: Icon(Icons.broken_image))))),
-        Center(
-            child: SizedBox(
-                width: 240,
-                height: 240,
-                child: Image.asset('assets/images/fruits/Fruits/lemon.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (ctx, e, st) =>
-                        const Center(child: Icon(Icons.broken_image))))),
-        Center(
-            child: SizedBox(
-                width: 240,
-                height: 240,
-                child: Image.asset('assets/images/fruits/Fruits/orange.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (ctx, e, st) =>
-                        const Center(child: Icon(Icons.broken_image))))),
-        Center(
-            child: SizedBox(
-                width: 240,
-                height: 240,
-                child: Image.asset('assets/images/fruits/Fruits/payaya.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (ctx, e, st) =>
-                        const Center(child: Icon(Icons.broken_image))))),
-        Center(
-            child: SizedBox(
-                width: 240,
-                height: 240,
-                child: Image.asset('assets/images/fruits/Fruits/pineapple.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (ctx, e, st) =>
-                        const Center(child: Icon(Icons.broken_image))))),
-        Center(
-            child: SizedBox(
-                width: 240,
-                height: 240,
-                child: Image.asset('assets/images/fruits/Fruits/strawberry.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (ctx, e, st) =>
-                        const Center(child: Icon(Icons.broken_image))))),
-        Center(
-            child: SizedBox(
-                width: 240,
-                height: 240,
-                child: Image.asset('assets/images/fruits/Fruits/watermelon.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (ctx, e, st) =>
-                        const Center(child: Icon(Icons.broken_image))))),
-      ],
-      'medium': [
-        // Use bundled SVG icons for Set 2 medium
-        SizedBox(
-            width: 96,
-            height: 96,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/apple.svg'))),
-        SizedBox(
-            width: 96,
-            height: 96,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/banana.svg'))),
-        SizedBox(
-            width: 96,
-            height: 96,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/cherry.svg'))),
-        SizedBox(
-            width: 96,
-            height: 96,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/grapes.svg'))),
-        SizedBox(
-            width: 96,
-            height: 96,
-            child: Center(
-                child: SvgPicture.asset(
-                    'assets/images/icons/fruits/pineapple.svg'))),
-        SizedBox(
-            width: 96,
-            height: 96,
-            child: Center(
-                child: SvgPicture.asset(
-                    'assets/images/icons/fruits/strawberry.svg'))),
-      ],
-      'hard': [
-        SizedBox(
-            width: 64,
-            height: 64,
-            child: Center(
-                child: SvgPicture.asset(
-                    'assets/images/icons/fruits/pineapple.svg'))),
-        SizedBox(
-            width: 64,
-            height: 64,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/banana.svg'))),
-        SizedBox(
-            width: 64,
-            height: 64,
-            child: Center(
-                child:
-                    SvgPicture.asset('assets/images/icons/fruits/apple.svg'))),
-      ],
-    },
-    'Vegetables': {
-      'easy': [
-        // Use uploaded vegetable images from assets/images/vegetables/ for Easy
-        Center(
-            child: SizedBox(
-                width: 160,
-                height: 160,
-                child: Image.asset('assets/images/vegetables/tomato.png',
-                    fit: BoxFit.contain))),
-        Center(
-            child: SizedBox(
-                width: 160,
-                height: 160,
-                child: Image.asset('assets/images/vegetables/carrots.png',
-                    fit: BoxFit.contain))),
-        Center(
-            child: SizedBox(
-                width: 160,
-                height: 160,
-                child: Image.asset('assets/images/vegetables/pumpkin.png',
-                    fit: BoxFit.contain))),
-        Center(
-            child: SizedBox(
-                width: 160,
-                height: 160,
-                child: Image.asset('assets/images/vegetables/eggplant.png',
-                    fit: BoxFit.contain))),
-        Center(
-            child: SizedBox(
-                width: 160,
-                height: 160,
-                child: Image.asset('assets/images/vegetables/broc.png',
-                    fit: BoxFit.contain))),
-      ],
-      'medium': [
-        const Icon(Icons.grass, size: 72, color: Colors.green),
-        // Keep previous easy visuals available in medium for familiarity
-        const Icon(Icons.eco, size: 100, color: Colors.greenAccent),
-        Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-                color: Colors.lightGreen,
-                borderRadius: BorderRadius.circular(12)),
-            child: const Center(
-                child: Text('🥕', style: TextStyle(fontSize: 36)))),
-        const CircleAvatar(
-            radius: 48,
-            backgroundColor: Colors.green,
-            child: Text('🥦', style: TextStyle(fontSize: 36))),
-      ],
-      'hard': [const Icon(Icons.spa, size: 48, color: Colors.lightGreen)],
-    },
-    'Colors': {
-      // Render all Colors tiles as responsive circles so Set 2 matches Set 1
-      // visually (no small/large mismatches). Use LayoutBuilder so the circle
-      // sizes itself to the available tile size (the outer visuals wrapper
-      // will generally provide a 152px tile).
-      'easy': [
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.red, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.orange, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.yellow, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.green, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.blue, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.purple, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.teal, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.pinkAccent, shape: BoxShape.circle)));
-        }),
-      ],
-      'medium': [
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.redAccent, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.deepOrange, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.lightGreen, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.cyan, shape: BoxShape.circle)));
-        }),
-      ],
-      'hard': [
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.indigo, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.lime, shape: BoxShape.circle)));
-        }),
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.amber, shape: BoxShape.circle)));
-        }),
-      ],
-    },
-    'Shapes': {
-      'easy': [
-        // Solid indigo circle (responsive)
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.indigo, shape: BoxShape.circle)));
-        }),
-        // Solid rounded square
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: BoxDecoration(
-                      color: Colors.deepPurple,
-                      borderRadius: BorderRadius.circular(s * 0.12))));
-        }),
-        // Solid triangle badge
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
-          return Center(
-              child: ClipPath(
-                  clipper: _TriangleClipper(),
+  // Make this an instance getter so it can reference the per-state
+  // _imageProviderCache (avoids using a static context where we can't
+  // reuse AssetImage/FileImage instances). Images use gaplessPlayback
+  // and an errorBuilder to reduce flicker and provide graceful fallback.
+  Map<String, Map<String, List<Widget>>> get _categoryWidgets => {
+        'Fruits': {
+          'easy': [
+            // Use real fruit images from assets for the Easy level. Place your
+            // images in assets/images/fruits/ (e.g. apple.png, banana.png).
+            // Wrap in Center to match other category visuals sizing.
+            // Use the uploaded real fruit images which live under
+            // assets/images/fruits/Fruits/ (user-uploaded). Keep a fixed
+            // size so the category visuals remain consistent.
+            Center(
+                child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/fruits/Fruits/apple.png'] ??=
+                            const AssetImage(
+                                'assets/images/fruits/Fruits/apple.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                        errorBuilder: (ctx, e, st) =>
+                            const Center(child: Icon(Icons.broken_image))))),
+            Center(
+                child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/fruits/Fruits/banana.png'] ??=
+                            const AssetImage(
+                                'assets/images/fruits/Fruits/banana.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                        errorBuilder: (ctx, e, st) =>
+                            const Center(child: Icon(Icons.broken_image))))),
+            Center(
+                child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/fruits/Fruits/cherry.png'] ??=
+                            const AssetImage(
+                                'assets/images/fruits/Fruits/cherry.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                        errorBuilder: (ctx, e, st) =>
+                            const Center(child: Icon(Icons.broken_image))))),
+            Center(
+                child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/fruits/Fruits/kiwi.png'] ??=
+                            const AssetImage(
+                                'assets/images/fruits/Fruits/kiwi.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                        errorBuilder: (ctx, e, st) =>
+                            const Center(child: Icon(Icons.broken_image))))),
+            Center(
+                child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/fruits/Fruits/lemon.png'] ??=
+                            const AssetImage(
+                                'assets/images/fruits/Fruits/lemon.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                        errorBuilder: (ctx, e, st) =>
+                            const Center(child: Icon(Icons.broken_image))))),
+            Center(
+                child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/fruits/Fruits/orange.png'] ??=
+                            const AssetImage(
+                                'assets/images/fruits/Fruits/orange.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                        errorBuilder: (ctx, e, st) =>
+                            const Center(child: Icon(Icons.broken_image))))),
+            Center(
+                child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/fruits/Fruits/payaya.png'] ??=
+                            const AssetImage(
+                                'assets/images/fruits/Fruits/payaya.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                        errorBuilder: (ctx, e, st) =>
+                            const Center(child: Icon(Icons.broken_image))))),
+            Center(
+                child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/fruits/Fruits/pineapple.png'] ??=
+                            const AssetImage(
+                                'assets/images/fruits/Fruits/pineapple.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                        errorBuilder: (ctx, e, st) =>
+                            const Center(child: Icon(Icons.broken_image))))),
+            Center(
+                child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/fruits/Fruits/strawberry.png'] ??=
+                            const AssetImage(
+                                'assets/images/fruits/Fruits/strawberry.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                        errorBuilder: (ctx, e, st) =>
+                            const Center(child: Icon(Icons.broken_image))))),
+            Center(
+                child: SizedBox(
+                    width: 240,
+                    height: 240,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/fruits/Fruits/watermelon.png'] ??=
+                            const AssetImage(
+                                'assets/images/fruits/Fruits/watermelon.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true,
+                        errorBuilder: (ctx, e, st) =>
+                            const Center(child: Icon(Icons.broken_image))))),
+          ],
+          'medium': [
+            // Use bundled SVG icons for Set 2 medium
+            SizedBox(
+                width: 96,
+                height: 96,
+                child: Center(
+                    child: SvgPicture.asset(
+                        'assets/images/icons/fruits/apple.svg'))),
+            SizedBox(
+                width: 96,
+                height: 96,
+                child: Center(
+                    child: SvgPicture.asset(
+                        'assets/images/icons/fruits/banana.svg'))),
+            SizedBox(
+                width: 96,
+                height: 96,
+                child: Center(
+                    child: SvgPicture.asset(
+                        'assets/images/icons/fruits/cherry.svg'))),
+            SizedBox(
+                width: 96,
+                height: 96,
+                child: Center(
+                    child: SvgPicture.asset(
+                        'assets/images/icons/fruits/grapes.svg'))),
+            SizedBox(
+                width: 96,
+                height: 96,
+                child: Center(
+                    child: SvgPicture.asset(
+                        'assets/images/icons/fruits/pineapple.svg'))),
+            SizedBox(
+                width: 96,
+                height: 96,
+                child: Center(
+                    child: SvgPicture.asset(
+                        'assets/images/icons/fruits/strawberry.svg'))),
+          ],
+          'hard': [
+            SizedBox(
+                width: 64,
+                height: 64,
+                child: Center(
+                    child: SvgPicture.asset(
+                        'assets/images/icons/fruits/pineapple.svg'))),
+            SizedBox(
+                width: 64,
+                height: 64,
+                child: Center(
+                    child: SvgPicture.asset(
+                        'assets/images/icons/fruits/banana.svg'))),
+            SizedBox(
+                width: 64,
+                height: 64,
+                child: Center(
+                    child: SvgPicture.asset(
+                        'assets/images/icons/fruits/apple.svg'))),
+          ],
+        },
+        'Vegetables': {
+          'easy': [
+            // Use uploaded vegetable images from assets/images/vegetables/ for Easy
+            Center(
+                child: SizedBox(
+                    width: 160,
+                    height: 160,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/vegetables/tomato.png'] ??=
+                            const AssetImage(
+                                'assets/images/vegetables/tomato.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true))),
+            Center(
+                child: SizedBox(
+                    width: 160,
+                    height: 160,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/vegetables/carrots.png'] ??=
+                            const AssetImage(
+                                'assets/images/vegetables/carrots.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true))),
+            Center(
+                child: SizedBox(
+                    width: 160,
+                    height: 160,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/vegetables/pumpkin.png'] ??=
+                            const AssetImage(
+                                'assets/images/vegetables/pumpkin.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true))),
+            Center(
+                child: SizedBox(
+                    width: 160,
+                    height: 160,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/vegetables/eggplant.png'] ??=
+                            const AssetImage(
+                                'assets/images/vegetables/eggplant.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true))),
+            Center(
+                child: SizedBox(
+                    width: 160,
+                    height: 160,
+                    child: Image(
+                        image: _imageProviderCache[
+                                'assets/images/vegetables/broc.png'] ??=
+                            const AssetImage(
+                                'assets/images/vegetables/broc.png'),
+                        fit: BoxFit.contain,
+                        gaplessPlayback: true))),
+          ],
+          'medium': [
+            const Icon(Icons.grass, size: 72, color: Colors.green),
+            // Keep previous easy visuals available in medium for familiarity
+            const Icon(Icons.eco, size: 100, color: Colors.greenAccent),
+            Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                    color: Colors.lightGreen,
+                    borderRadius: BorderRadius.circular(12)),
+                child: const Center(
+                    child: Text('🥕', style: TextStyle(fontSize: 36)))),
+            const CircleAvatar(
+                radius: 48,
+                backgroundColor: Colors.green,
+                child: Text('🥦', style: TextStyle(fontSize: 36))),
+          ],
+          'hard': [const Icon(Icons.spa, size: 48, color: Colors.lightGreen)],
+        },
+        'Colors': {
+          // Render all Colors tiles as responsive circles so Set 2 matches Set 1
+          // visually (no small/large mismatches). Use LayoutBuilder so the circle
+          // sizes itself to the available tile size (the outer visuals wrapper
+          // will generally provide a 152px tile).
+          'easy': [
+            // Render circular color tiles using the existing _TriangleBadge
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: SizedBox(
+                      width: s,
+                      height: s,
+                      child: Container(
+                        width: s,
+                        height: s,
+                        decoration: BoxDecoration(
+                            color: Colors.deepOrange.shade300,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.deepOrange.shade100,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3))
+                            ]),
+                      )));
+            }),
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: SizedBox(
+                      width: s,
+                      height: s,
+                      child: Container(
+                        width: s,
+                        height: s,
+                        decoration: BoxDecoration(
+                            color: Colors.amber.shade300,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.amber.shade100,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3))
+                            ]),
+                      )));
+            }),
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: SizedBox(
+                      width: s,
+                      height: s,
+                      child: Container(
+                        width: s,
+                        height: s,
+                        decoration: BoxDecoration(
+                            color: Colors.lightGreen.shade400,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.lightGreen.shade100,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3))
+                            ]),
+                      )));
+            }),
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: SizedBox(
+                      width: s,
+                      height: s,
+                      child: Container(
+                        width: s,
+                        height: s,
+                        decoration: BoxDecoration(
+                            color: Colors.cyan.shade300,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.cyan.shade100,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3))
+                            ]),
+                      )));
+            }),
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: SizedBox(
+                      width: s,
+                      height: s,
+                      child: Container(
+                        width: s,
+                        height: s,
+                        decoration: BoxDecoration(
+                            color: Colors.purple.shade300,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.purple.shade100,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3))
+                            ]),
+                      )));
+            }),
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: SizedBox(
+                      width: s,
+                      height: s,
+                      child: Container(
+                        width: s,
+                        height: s,
+                        decoration: BoxDecoration(
+                            color: Colors.teal.shade300,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.teal.shade100,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3))
+                            ]),
+                      )));
+            }),
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: SizedBox(
+                      width: s,
+                      height: s,
+                      child: Container(
+                        width: s,
+                        height: s,
+                        decoration: BoxDecoration(
+                            color: Colors.indigo.shade300,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.indigo.shade100,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3))
+                            ]),
+                      )));
+            }),
+          ],
+          'medium': [
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
                   child: Container(
                       width: s,
                       height: s,
                       decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                              colors: [Colors.orange, Colors.deepOrange])))));
-        }),
-        // Solid star (icon-shaped)
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(child: Icon(Icons.star, size: s, color: Colors.amber));
-        }),
-        // Solid pink circle
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: const BoxDecoration(
-                      color: Colors.pinkAccent, shape: BoxShape.circle)));
-        }),
-        // Teal rounded box
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: BoxDecoration(
-                      color: Colors.teal,
-                      borderRadius: BorderRadius.circular(s * 0.12),
-                      border: Border.all(
-                          color: Colors.teal.shade700, width: s * 0.04))));
-        }),
-        // Diamond (rotated square)
-        LayoutBuilder(builder: (ctx, c) {
-          // Reduce the inner square so that when rotated by 45deg the
-          // rotated bounding box fits the tile. Rotated square bbox = s*sqrt(2).
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9 / math.sqrt(2);
-          return Center(
-              child: Transform.rotate(
-                  angle: 0.785398,
-                  child: Container(
-                      width: s, height: s, color: Colors.blueAccent)));
-        }),
-        // Gradient rounded square
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                          colors: [Colors.purple, Colors.blue]),
-                      borderRadius: BorderRadius.circular(s * 0.12))));
-        }),
-        // Ringed circle (solid center)
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
-          return Center(
-              child: Container(
-                  width: s,
-                  height: s,
-                  decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      shape: BoxShape.circle,
-                      border:
-                          Border.all(color: Colors.orange, width: s * 0.07))));
-        }),
-        // Hexagon-like solid shape (rotated rounded rect)
-        LayoutBuilder(builder: (ctx, c) {
-          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
-          return Center(
-              child: Transform.rotate(
-                  angle: 0.26,
+                          color: Colors.redAccent, shape: BoxShape.circle)));
+            }),
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
                   child: Container(
                       width: s,
-                      height: s * 0.72,
+                      height: s,
+                      decoration: const BoxDecoration(
+                          color: Colors.deepOrange, shape: BoxShape.circle)));
+            }),
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: Container(
+                      width: s,
+                      height: s,
+                      decoration: const BoxDecoration(
+                          color: Colors.lightGreen, shape: BoxShape.circle)));
+            }),
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: Container(
+                      width: s,
+                      height: s,
+                      decoration: const BoxDecoration(
+                          color: Colors.cyan, shape: BoxShape.circle)));
+            }),
+          ],
+          'hard': [
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: Container(
+                      width: s,
+                      height: s,
+                      decoration: const BoxDecoration(
+                          color: Colors.indigo, shape: BoxShape.circle)));
+            }),
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: Container(
+                      width: s,
+                      height: s,
+                      decoration: const BoxDecoration(
+                          color: Colors.lime, shape: BoxShape.circle)));
+            }),
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: Container(
+                      width: s,
+                      height: s,
+                      decoration: const BoxDecoration(
+                          color: Colors.amber, shape: BoxShape.circle)));
+            }),
+          ],
+        },
+        'Shapes': {
+          'easy': [
+            // Solid indigo circle (responsive)
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
+              return Center(
+                  child: Container(
+                      width: s,
+                      height: s,
+                      decoration: const BoxDecoration(
+                          color: Colors.indigo, shape: BoxShape.circle)));
+            }),
+            // Solid rounded square
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
+              return Center(
+                  child: Container(
+                      width: s,
+                      height: s,
                       decoration: BoxDecoration(
-                          color: Colors.lime,
-                          borderRadius: BorderRadius.circular(s * 0.12)))));
-        }),
-      ],
-      'medium': [const Icon(Icons.square_foot, size: 72, color: Colors.brown)],
-      'hard': [
-        const Icon(Icons.change_history, size: 48, color: Colors.pink),
-        const Icon(Icons.crop_square, size: 48, color: Colors.cyan)
-      ],
-    },
-  };
+                          color: Colors.deepPurple,
+                          borderRadius: BorderRadius.circular(s * 0.12))));
+            }),
+            // Solid triangle badge
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
+              return Center(
+                  child: ClipPath(
+                      clipper: _TriangleClipper(),
+                      child: Container(
+                          width: s,
+                          height: s,
+                          decoration: const BoxDecoration(
+                              gradient: LinearGradient(colors: [
+                            Colors.deepOrange,
+                            Colors.deepOrangeAccent
+                          ])))));
+            }),
+            // Solid star (icon-shaped)
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: Icon(Icons.star, size: s, color: Colors.amber));
+            }),
+            // Solid pink circle
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
+              return Center(
+                  child: Container(
+                      width: s,
+                      height: s,
+                      decoration: const BoxDecoration(
+                          color: Colors.pinkAccent, shape: BoxShape.circle)));
+            }),
+            // Teal rounded box
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
+              return Center(
+                  child: Container(
+                      width: s,
+                      height: s,
+                      decoration: BoxDecoration(
+                          color: Colors.teal,
+                          borderRadius: BorderRadius.circular(s * 0.12),
+                          border: Border.all(
+                              color: Colors.teal.shade700, width: s * 0.04))));
+            }),
+            // Diamond (rotated square)
+            LayoutBuilder(builder: (ctx, c) {
+              // Reduce the inner square so that when rotated by 45deg the
+              // rotated bounding box fits the tile. Rotated square bbox = s*sqrt(2).
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9 / math.sqrt(2);
+              return Center(
+                  child: Transform.rotate(
+                      angle: 0.785398,
+                      child: Container(
+                          width: s, height: s, color: Colors.blueAccent)));
+            }),
+            // Gradient rounded square
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
+              return Center(
+                  child: Container(
+                      width: s,
+                      height: s,
+                      decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                              colors: [Colors.purple, Colors.blue]),
+                          borderRadius: BorderRadius.circular(s * 0.12))));
+            }),
+            // Ringed circle (solid center)
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.95;
+              return Center(
+                  child: Container(
+                      width: s,
+                      height: s,
+                      decoration: BoxDecoration(
+                          color: Colors.deepOrange.shade100,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: Colors.deepOrange, width: s * 0.07))));
+            }),
+            // Hexagon-like solid shape (rotated rounded rect)
+            LayoutBuilder(builder: (ctx, c) {
+              final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+              return Center(
+                  child: Transform.rotate(
+                      angle: 0.26,
+                      child: Container(
+                          width: s,
+                          height: s * 0.72,
+                          decoration: BoxDecoration(
+                              color: Colors.lime,
+                              borderRadius: BorderRadius.circular(s * 0.12)))));
+            }),
+          ],
+          'medium': [
+            const Icon(Icons.square_foot, size: 72, color: Colors.brown)
+          ],
+          'hard': [
+            const Icon(Icons.change_history, size: 48, color: Colors.pink),
+            const Icon(Icons.crop_square, size: 48, color: Colors.cyan)
+          ],
+        },
+      };
 
   List<MatchingPair> _makePairsForCategory(String category) {
     // If easy difficulty and we have dynamic assets for fruits/vegetables,
@@ -1867,13 +1993,16 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                 final id = '$_selectedCategory-$difficulty-$idx';
                 final assetPath = cartoons[assetIndex];
                 const tile = 96.0; // smaller tiles for Set 2
+                final provider =
+                    _imageProviderCache[assetPath] ??= AssetImage(assetPath);
                 final w = SizedBox(
                     width: tile,
                     height: tile,
                     child: Center(
                         child: FittedBox(
                       fit: BoxFit.contain,
-                      child: Image.asset(assetPath,
+                      child: Image(
+                          image: provider,
                           gaplessPlayback: true,
                           errorBuilder: (ctx, e, st) =>
                               const Center(child: Icon(Icons.broken_image))),
