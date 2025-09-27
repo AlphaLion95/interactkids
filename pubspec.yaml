@@ -38,6 +38,8 @@ flutter:
     - assets/images/fruits/Fruits/
     - assets/images/icons/fruits/
     - assets/images/vegetables/
+    - assets/images/vegetables/cartoon/
+    - assets/images/shapes/cartoon/
     - assets/processed/
     - assets/processed/fruits/
     - assets/processed/vegetables/

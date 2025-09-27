@@ -8,6 +8,7 @@ import 'package:interactkids/widgets/animated_bubbles_background.dart';
 import 'package:interactkids/modules/matching/letters_to_letters/matching_game_base.dart';
 import 'package:interactkids/modules/matching/letters_to_letters/matching_models.dart';
 import 'dart:math' as math;
+import 'dart:collection';
 import 'pictures_mode.dart';
 import 'package:interactkids/widgets/bouncing_button.dart';
 import 'package:image_picker/image_picker.dart';
@@ -314,6 +315,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
   // are scoped to the category they were created for.
   final Map<String, String> _customSetCategory = {};
   bool _prefsLoaded = false;
+  bool _assetsLoaded = false;
   // Map custom set key -> list of local file paths for images
   final Map<String, List<String>> _customSetImages = {};
 
@@ -559,9 +561,9 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     }
     debugPrint('PicturesScreen: saved ${savedPaths.length} images for $key');
     await _savePersistedCustomSets();
-    // recreate the game key to force MatchingGameBase to remount and pick up
-    // the new visuals and pairs.
-    _gameKey = GlobalKey<MatchingGameBaseState>();
+    // No need to recreate the global key here. Calling setState below
+    // is sufficient — MatchingGameBase.didUpdateWidget will detect
+    // changes to the mode (pairs/visuals) and reload progress.
     if (mounted) {
       final messenger = ScaffoldMessenger.maybeOf(context);
       messenger?.showSnackBar(SnackBar(
@@ -620,9 +622,8 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
       }
       _customSetImages[key] = updated;
       await _savePersistedCustomSets();
-      // Recreate the game key so MatchingGameBase remounts and reloads the
-      // pairs/visuals based on the updated images.
-      _gameKey = GlobalKey<MatchingGameBaseState>();
+      // Do not recreate the global key here; rely on setState and
+      // MatchingGameBase.didUpdateWidget to pick up the updated visuals.
       if (mounted) setState(() {});
     }
   }
@@ -640,6 +641,9 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
       final fruits = <String>[];
       final vegetables = <String>[];
       final fruitsCartoon = <String>[];
+      final vegetablesCartoon = <String>[];
+      final shapes = <String>[];
+      final shapesCartoon = <String>[];
       final allowedExts = {'.png', '.jpg', '.jpeg', '.gif', '.bmp'};
       for (final key in manifestMap.keys) {
         final lowerKey = key.toLowerCase();
@@ -690,17 +694,43 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
             final bd = await rootBundle.load(preferred);
             final bytes = bd.buffer.asUint8List();
             await ui.instantiateImageCodec(bytes);
-            vegetables.add(preferred);
+            // If this asset lives in a 'cartoon' subfolder register it
+            // separately so Set 2 can prefer cartoon vegetables as well.
+            if (preferred.toLowerCase().contains('/vegetables/cartoon/')) {
+              vegetablesCartoon.add(preferred);
+            } else {
+              vegetables.add(preferred);
+            }
           } catch (e) {
             debugPrint('Skipping invalid vegetable asset $preferred: $e');
+          }
+        }
+        if (lowerKey.startsWith('assets/images/shapes/') &&
+            allowedExts.contains(ext)) {
+          final preferred = pickPreferred(key);
+          try {
+            final bd = await rootBundle.load(preferred);
+            final bytes = bd.buffer.asUint8List();
+            await ui.instantiateImageCodec(bytes);
+            if (preferred.toLowerCase().contains('/shapes/cartoon/')) {
+              shapesCartoon.add(preferred);
+            } else {
+              shapes.add(preferred);
+            }
+          } catch (e) {
+            debugPrint('Skipping invalid shape asset $preferred: $e');
           }
         }
       }
       fruits.sort();
       fruitsCartoon.sort();
       vegetables.sort();
+      vegetablesCartoon.sort();
+      shapes.sort();
+      shapesCartoon.sort();
       debugPrint(
           'PicturesScreen: discovered assets - fruits=${fruits.length}, vegetables=${vegetables.length}');
+      debugPrint('PicturesScreen: discovered shapes=${shapes.length}');
       // Log cartoon assets separately to help debugging when users add new files
       debugPrint(
           'PicturesScreen: discovered cartoon fruits=${fruitsCartoon.length}');
@@ -708,6 +738,18 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         // Print up to 12 entries to avoid overly large logs
         final sample = fruitsCartoon.take(12).join(', ');
         debugPrint('PicturesScreen: fruits_cartoon sample: $sample');
+      }
+      debugPrint(
+          'PicturesScreen: discovered cartoon vegetables=${vegetablesCartoon.length}');
+      debugPrint(
+          'PicturesScreen: discovered cartoon shapes=${shapesCartoon.length}');
+      if (vegetablesCartoon.isNotEmpty) {
+        final sampleV = vegetablesCartoon.take(12).join(', ');
+        debugPrint('PicturesScreen: vegetables_cartoon sample: $sampleV');
+      }
+      if (shapesCartoon.isNotEmpty) {
+        final sampleS = shapesCartoon.take(12).join(', ');
+        debugPrint('PicturesScreen: shapes_cartoon sample: $sampleS');
       }
       // Print a small sample of keys from the manifest that include '/fruits/'
       try {
@@ -729,6 +771,14 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         if (cartoonKeys.isNotEmpty)
           debugPrint(
               'PicturesScreen: assetManifest fruits/cartoon sample: ${cartoonKeys.take(12).join(', ')}');
+        final vegCartoonKeys = manifestMap.keys
+            .where((k) => k.toLowerCase().contains('/vegetables/cartoon/'))
+            .toList();
+        debugPrint(
+            'PicturesScreen: assetManifest vegetables/cartoon count=${vegCartoonKeys.length}');
+        if (vegCartoonKeys.isNotEmpty)
+          debugPrint(
+              'PicturesScreen: assetManifest vegetables/cartoon sample: ${vegCartoonKeys.take(12).join(', ')}');
       } catch (e) {
         debugPrint('PicturesScreen: failed to sample manifest keys: $e');
       }
@@ -737,11 +787,36 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
         // expose cartoon set separately so Set 2 can prefer these images
         _assetsByFolder['fruits_cartoon'] = fruitsCartoon;
         _assetsByFolder['vegetables'] = vegetables;
+        _assetsByFolder['vegetables_cartoon'] = vegetablesCartoon;
+        _assetsByFolder['shapes'] = shapes;
+        _assetsByFolder['shapes_cartoon'] = shapesCartoon;
+        // Do not mark assetsLoaded yet; we will precache cartoon images below
       });
-      // Remount MatchingGameBase so that new assets are used when building
-      // pairs and visuals; this avoids stale pairs/visuals when assets change.
-      _gameKey = GlobalKey<MatchingGameBaseState>();
-      debugPrint('PicturesScreen: _gameKey refreshed after asset load');
+      // Precache discovered cartoon assets to avoid a visible flash when
+      // Set 2 is selected. Limit to categories we actually discovered.
+      final toPrecache = <String>[];
+      toPrecache.addAll(fruitsCartoon);
+      toPrecache.addAll(vegetablesCartoon);
+      toPrecache.addAll(shapesCartoon);
+      try {
+        final futures = <Future<void>>[];
+        for (final p in toPrecache) {
+          try {
+            futures.add(precacheImage(AssetImage(p), context));
+          } catch (_) {}
+        }
+        // await all precache tasks but guard with timeout to avoid hangs
+        await Future.wait(futures);
+      } catch (_) {}
+      // Now mark assets as loaded and remount the game so visuals/pairs
+      // are constructed from the preloaded images.
+      setState(() {
+        _assetsLoaded = true;
+      });
+      // No remount here — didUpdateWidget in MatchingGameBase will detect
+      // changes (mode.pairs.length / progressKey) and reload progress.
+      debugPrint(
+          'PicturesScreen: assets loaded; relying on didUpdateWidget to refresh MatchingGameBase');
       debugPrint('PicturesScreen: _assetsByFolder updated and setState called');
     } catch (e) {
       // Ignore manifest loading errors; fallback to static lists.
@@ -961,25 +1036,150 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
       'hard': [const Icon(Icons.spa, size: 48, color: Colors.lightGreen)],
     },
     'Colors': {
+      // Render all Colors tiles as responsive circles so Set 2 matches Set 1
+      // visually (no small/large mismatches). Use LayoutBuilder so the circle
+      // sizes itself to the available tile size (the outer visuals wrapper
+      // will generally provide a 152px tile).
       'easy': [
-        const ColoredBox(
-            color: Colors.red, child: SizedBox(width: 100, height: 100)),
-        const ColoredBox(
-            color: Colors.orange, child: SizedBox(width: 100, height: 100)),
-        const ColoredBox(
-            color: Colors.yellow, child: SizedBox(width: 100, height: 100)),
-        const ColoredBox(
-            color: Colors.green, child: SizedBox(width: 100, height: 100)),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.red, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.orange, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.yellow, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.green, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.blue, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.purple, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.teal, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.pinkAccent, shape: BoxShape.circle)));
+        }),
       ],
       'medium': [
-        const ColoredBox(
-            color: Colors.green, child: SizedBox(width: 72, height: 72))
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.redAccent, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.deepOrange, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.lightGreen, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.cyan, shape: BoxShape.circle)));
+        }),
       ],
       'hard': [
-        const ColoredBox(
-            color: Colors.blue, child: SizedBox(width: 48, height: 48)),
-        const ColoredBox(
-            color: Colors.yellow, child: SizedBox(width: 48, height: 48))
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.indigo, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.lime, shape: BoxShape.circle)));
+        }),
+        LayoutBuilder(builder: (ctx, c) {
+          final s = math.min(c.maxWidth, c.maxHeight) * 0.9;
+          return Center(
+              child: Container(
+                  width: s,
+                  height: s,
+                  decoration: const BoxDecoration(
+                      color: Colors.amber, shape: BoxShape.circle)));
+        }),
       ],
     },
     'Shapes': {
@@ -1171,9 +1371,11 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
       // Special-case: if category is Fruits and difficulty is medium/hard and
       // we discovered cartoon assets, generate pairs from those instead of
       // the hardcoded widget list so Set 2 uses uploaded images.
-      if (category == 'Fruits' &&
+      if ((category == 'Fruits' ||
+              category == 'Vegetables' ||
+              category == 'Shapes') &&
           (difficulty == 'medium' || difficulty == 'hard')) {
-        final cartoons = _assetsByFolder['fruits_cartoon'];
+        final cartoons = _assetsByFolder[category.toLowerCase() + '_cartoon'];
         if (cartoons != null && cartoons.isNotEmpty) {
           // Interleave assets between medium and hard so both sets receive
           // different images (medium: even indices, hard: odd indices).
@@ -1224,18 +1426,28 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
       }
     } catch (_) {}
 
+    // Remove duplicate IDs while preserving order to prevent creating
+    // multiple widgets with the same GlobalKey further down the tree.
+    final deduped = LinkedHashSet<String>.from(items);
+    if (deduped.length != items.length) {
+      try {
+        debugPrint(
+            'PicturesScreen: removed ${items.length - deduped.length} duplicate items for $category');
+      } catch (_) {}
+    }
+    final finalItems = deduped.toList();
     // Debug: log the final items so we can diagnose duplicate/missing IDs
     try {
       debugPrint(
-          'PicturesScreen: _makePairsForCategory for $category produced ${items.length} items');
-      if (items.length <= 48) {
-        debugPrint('PicturesScreen: items sample: ${items.join(', ')}');
+          'PicturesScreen: _makePairsForCategory for $category produced ${finalItems.length} items');
+      if (finalItems.length <= 48) {
+        debugPrint('PicturesScreen: items sample: ${finalItems.join(', ')}');
       } else {
         debugPrint(
-            'PicturesScreen: items sample (first 48): ${items.take(48).join(', ')}');
+            'PicturesScreen: items sample (first 48): ${finalItems.take(48).join(', ')}');
       }
     } catch (_) {}
-    return items.map((id) => MatchingPair(left: id, right: id)).toList();
+    return finalItems.map((id) => MatchingPair(left: id, right: id)).toList();
   }
 
   // Helper to decide whether a given difficulty (easy/medium/hard) should be
@@ -1258,6 +1470,30 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
     }
     // fallback: match exact
     return difficulty == selected;
+  }
+
+  // Return true if we should wait for assets to be discovered before
+  // constructing the MatchingGameBase. This helps avoid a brief flicker
+  // where default icon widgets render and are then replaced by cartoons
+  // when AssetManifest parsing completes.
+  bool _shouldWaitForAssets() {
+    // If assets already loaded, no need to wait
+    if (_assetsLoaded) return false;
+    // Only wait when Set 2 (medium/hard) is selected for categories that
+    // can prefer cartoons.
+    if (_selectedDifficulty == null) return false;
+    String resolved = _selectedDifficulty!;
+    if (_customSetMapping.containsKey(resolved))
+      resolved = _customSetMapping[resolved]!;
+    if (resolved != 'set2' && resolved != 'all') return false;
+    if (_selectedCategory == null) return false;
+    // Categories that prefer cartoons for set2
+    if (_selectedCategory == 'Fruits' ||
+        _selectedCategory == 'Vegetables' ||
+        _selectedCategory == 'Shapes') {
+      return true;
+    }
+    return false;
   }
 
   String _displayLabel(String key) {
@@ -1461,10 +1697,16 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
   @override
   Widget build(BuildContext context) {
     final categories = _categoryWidgets.keys.toList();
-    final pairs = _selectedCategory == null
-        ? <MatchingPair>[]
-        : _makePairsForCategory(_selectedCategory!);
+    // Defer pair/visuals construction if we should wait for assets to avoid
+    // a brief flash where default icons render before cartoons are applied.
+    List<MatchingPair> pairs = <MatchingPair>[];
     final visuals = <String, Widget>{};
+    final bool waitingForAssets = _shouldWaitForAssets() || !_prefsLoaded;
+    if (_selectedCategory != null && !waitingForAssets) {
+      pairs = _makePairsForCategory(_selectedCategory!);
+      // build visuals only when not waiting for assets
+      // (existing visuals-building code follows below)
+    }
     // tile sizes used inline below (kept simple after revert)
     final groups = _selectedCategory == null
         ? {}
@@ -1556,12 +1798,17 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
           }
           return;
         }
-        // Special-case: if category is Fruits and difficulty is medium/hard (Set 2)
-        // prefer any discovered cartoon assets under assets/images/fruits/cartoon/
+        // Special-case: if category is Fruits, Vegetables or Shapes and
+        // difficulty is medium/hard (Set 2), prefer any discovered cartoon
+        // assets under assets/images/<category>/cartoon/ and interleave them
+        // between medium and hard so both sets show different images.
         var usedCartoons = false;
-        if (_selectedCategory == 'Fruits' &&
+        if ((_selectedCategory == 'Fruits' ||
+                _selectedCategory == 'Vegetables' ||
+                _selectedCategory == 'Shapes') &&
             (difficulty == 'medium' || difficulty == 'hard')) {
-          final cartoons = _assetsByFolder['fruits_cartoon'];
+          final cartoons =
+              _assetsByFolder['${_selectedCategory!.toLowerCase()}_cartoon'];
           if (cartoons != null && cartoons.isNotEmpty) {
             final total = cartoons.length;
             // Build index lists matching the interleaving logic used above
@@ -1607,6 +1854,11 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                 visuals[id] = w;
               }
             }
+            // Log that we are using cartoons for this category/difficulty.
+            try {
+              debugPrint(
+                  'PicturesScreen: using cartoons for ${_selectedCategory} $difficulty (total=${cartoons.length}, medium=${mediumIndices.length}, hard=${hardIndices.length})');
+            } catch (_) {}
             usedCartoons = true;
           }
         }
@@ -1814,22 +2066,29 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                                   Text('🥕', style: TextStyle(fontSize: 48)));
                           break;
                         case 'Colors':
+                          // Use a compact, evenly padded multi-swatch visual so the
+                          // chooser card's left/right margins match Fruits (84px visual)
                           color = Colors.purple.shade400;
-                          visual = Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Expanded(
-                                  child: ColoredBox(
-                                      color: Colors.red, child: SizedBox())),
-                              SizedBox(width: 4),
-                              Expanded(
-                                  child: ColoredBox(
-                                      color: Colors.green, child: SizedBox())),
-                              SizedBox(width: 4),
-                              Expanded(
-                                  child: ColoredBox(
-                                      color: Colors.blue, child: SizedBox())),
-                            ],
+                          visual = SizedBox(
+                            width: 84,
+                            height: 84,
+                            child: Row(
+                              children: const [
+                                Expanded(
+                                    child: ColoredBox(
+                                        color: Colors.red, child: SizedBox())),
+                                SizedBox(width: 4),
+                                Expanded(
+                                    child: ColoredBox(
+                                        color: Colors.orange,
+                                        child: SizedBox())),
+                                SizedBox(width: 4),
+                                Expanded(
+                                    child: ColoredBox(
+                                        color: Colors.yellow,
+                                        child: SizedBox())),
+                              ],
+                            ),
                           );
                           break;
                         case 'Shapes':
@@ -2088,7 +2347,7 @@ class _MatchingPicturesScreenState extends State<MatchingPicturesScreen> {
                       ),
                     const SizedBox(height: 8),
                     Expanded(
-                      child: !_prefsLoaded
+                      child: (!_prefsLoaded || _shouldWaitForAssets())
                           ? const Center(child: CircularProgressIndicator())
                           : MatchingGameBase(
                               key: _gameKey,

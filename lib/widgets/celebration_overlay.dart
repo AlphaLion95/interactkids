@@ -67,6 +67,10 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
       }
     }
     Future.delayed(const Duration(seconds: 4), () {
+      // Ensure we're still mounted before calling back to parent. The
+      // parent (MatchingGameBase) may have been disposed if the user
+      // navigated away; calling setState there would throw.
+      if (!mounted) return;
       if (widget.onComplete != null) widget.onComplete!();
     });
   }
